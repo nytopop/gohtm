@@ -9,19 +9,44 @@ package main
 6. For each active column, we adjust the permanence values of all potential synapses. The permanence of synapses aligned with active input bits is increased. The changes may change some synapses from connected<->disconnected.
 */
 
-type SpatialParams struct {
+/*
+Need to convert input vector into output vector of dif dimensions
+Need to normalize sparsity
+Maintain overlap properties of input data
+*/
+
+type ProximalSynapse struct {
+}
+
+type DistalSynapse struct {
+}
+
+type Dendrite struct {
+}
+
+type Column struct {
+	d []Dendrite
 }
 
 type SpatialPooler struct {
+	// Params
+	n           int     // number of columns
+	h           int     // column height
+	connPercent float64 // percent to connect on init
+
+	// State
+	columns   []Column // columns
+	potential Vector
 }
 
 func NewSpatialPooler() SpatialPooler {
-	return SpatialPooler{}
+	sp := SpatialPooler{}
+
+	return sp
 }
 
-func (sp SpatialPooler) Compute() SDR {
+func (sp SpatialPooler) Compute(in SDR) SDR {
 	// phase 1
-
 	// phase 2
 	// phase 3
 	return SDR{}

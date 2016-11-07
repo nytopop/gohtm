@@ -1,9 +1,14 @@
 package main
 
+import "fmt"
+
 func main() {
 	//e := NewScalarEncoder(2048, 40, 1)
-	r := NewRegion()
-	r.enc.Encode(12.0)
+	//r := NewRegion()
+	//r.enc.Encode(12.0)
+
+	sm := NewDenseMatrix(64, 32).Sparse()
+	fmt.Println(sm.Pretty())
 
 	// test encoding
 	/*
