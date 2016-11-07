@@ -45,11 +45,11 @@ func NewSpatialPooler() SpatialPooler {
 	return sp
 }
 
-func (sp SpatialPooler) Compute(in SDR) SDR {
+func (sp SpatialPooler) Compute(in SparseVector) SparseVector {
 	// phase 1
 	// phase 2
 	// phase 3
-	return SDR{}
+	return SparseVector{}
 }
 
 // Phase 1 : Overlap

@@ -14,8 +14,8 @@ import (
 */
 
 type Encoder interface {
-	Encode(interface{}) SDR
-	Decode(SDR) interface{}
+	Encode(interface{}) SparseVector
+	Decode(SparseVector) interface{}
 }
 
 // Random Distributed Scalar Encoder
@@ -36,31 +36,37 @@ func NewRDScalarEncoder(n, w int, r float64) RDScalarEncoder {
 	}
 }
 
-func (se RDScalarEncoder) Encode(s interface{}) SDR {
-	vec := Vector{}
-	for i := 0; i < se.n; i++ {
-		vec = append(vec, false)
+func (rdse RDScalarEncoder) Encode(s interface{}) SparseVector {
+	sv := NewSparseVector(rdse.n)
+
+	b := int(s.(float64) / rdse.r)
+	if _, ok := rdse.buckets[b]; !ok {
+		rdse.NewBucket(b)
 	}
 
-	b := int(s.(float64) / se.r)
-	if _, ok := se.buckets[b]; !ok {
-		se.NewBucket(b)
+	for _, v := range rdse.buckets[b] {
+		sv.d = append(sv.d, v)
 	}
 
-	for _, v := range se.buckets[b] {
-		vec[v] = true
-	}
-
-	return vec.SDR()
+	return sv
 }
 
-func (se RDScalarEncoder) NewBucket(b int) {
+func (rdse RDScalarEncoder) NewBucket(b int) {
 	for i := 0; i <= b; i++ {
-		if _, ok := se.buckets[i]; !ok {
-			se.buckets[i] = jank(i, se.n, se.w)
-			sort.Ints(se.buckets[i])
+		if _, ok := rdse.buckets[i]; !ok {
+			rdse.buckets[i] = jank(i, rdse.n, rdse.w)
+			sort.Ints(rdse.buckets[i])
 		}
 	}
+}
+
+func (rdse RDScalarEncoder) Decode(s SparseVector) interface{} {
+	for k, v := range rdse.buckets {
+		if reflect.DeepEqual(v, s.x) {
+			return float64(k) * rdse.r
+		}
+	}
+	return 0.0
 }
 
 // Literally the worst algorithm in the known universe.
@@ -96,16 +102,6 @@ func fakeHash(n, max, seed int) int {
 		rand.Intn(max)
 	}
 	return rand.Intn(max)
-}
-
-func (se RDScalarEncoder) Decode(s SDR) interface{} {
-	for k, v := range se.buckets {
-		if reflect.DeepEqual(v, s.w) {
-			return float64(k) * se.r
-		}
-	}
-
-	return 0.0
 }
 
 // ***********************************

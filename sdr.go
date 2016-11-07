@@ -110,6 +110,12 @@ type SparseVector struct {
 	d []int
 }
 
+func NewSparseVector(x int) SparseVector {
+	sv := SparseVector{}
+	sv.x = x
+	return sv
+}
+
 func (sv SparseVector) Dense() DenseVector {
 	dv := NewDenseVector(sv.x)
 	for _, i := range sv.d {
@@ -136,25 +142,8 @@ func (sv SparseVector) Pretty() string {
 // Annex Code : TODO remove
 // ********************************
 
-type Vector []bool
-
-// Create Vector of len x, full of empty values
-
-// Convert Vector to SDR
-func (vec Vector) SDR() SDR {
-	s := SDR{}
-	s.n = len(vec)
-
-	for i, v := range vec {
-		if v == true {
-			s.w = append(s.w, i)
-		}
-	}
-	return s
-}
-
 // Return overlap of two vectors
-func Overlap(x, y Vector) int {
+func Overlap(x, y DenseVector) int {
 	if len(x) != len(y) {
 		panic("Mismatched Vectors!")
 	}
@@ -175,39 +164,7 @@ func Union(x ...Vector) Vector {
 	return Vector{}
 }*/
 
-type SDR struct {
-	n int   // width
-	w []int // indices of active bits
-}
-
 // Return sparsity of SDR
 func (s SDR) Sparsity() float32 {
 	return float32(len(s.w)) / float32(s.n)
 }
-
-// Convert SDR to Vector
-func (s SDR) Vector() Vector {
-	v := Vector{}
-	for i := 0; i < s.n; i++ {
-		v = append(v, false)
-	}
-	for _, a := range s.w {
-		v[a] = true
-	}
-	return v
-}
-
-func (s SDR) Pretty() string {
-	out := ""
-	vec := s.Vector()
-	for _, v := range vec {
-		if v {
-			out += "1"
-		} else {
-			out += "0"
-		}
-	}
-	return out
-}
-
-// ********************************
