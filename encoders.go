@@ -14,8 +14,8 @@ import (
 */
 
 type Encoder interface {
-	Encode(interface{}) SparseVector
-	Decode(SparseVector) interface{}
+	Encode(interface{}) SparseBinaryVector
+	Decode(SparseBinaryVector) interface{}
 }
 
 // Random Distributed Scalar Encoder
@@ -36,17 +36,14 @@ func NewRDScalarEncoder(n, w int, r float64) RDScalarEncoder {
 	}
 }
 
-func (rdse RDScalarEncoder) Encode(s interface{}) SparseVector {
-	sv := NewSparseVector(rdse.n)
-
+func (rdse RDScalarEncoder) Encode(s interface{}) SparseBinaryVector {
 	b := int(s.(float64) / rdse.r)
 	if _, ok := rdse.buckets[b]; !ok {
 		rdse.NewBucket(b)
 	}
 
-	for _, v := range rdse.buckets[b] {
-		sv.d = append(sv.d, v)
-	}
+	sv := NewSparseBinaryVector(rdse.n)
+	sv.d = rdse.buckets[b]
 
 	return sv
 }
@@ -60,7 +57,7 @@ func (rdse RDScalarEncoder) NewBucket(b int) {
 	}
 }
 
-func (rdse RDScalarEncoder) Decode(s SparseVector) interface{} {
+func (rdse RDScalarEncoder) Decode(s SparseBinaryVector) interface{} {
 	for k, v := range rdse.buckets {
 		if reflect.DeepEqual(v, s.x) {
 			return float64(k) * rdse.r
@@ -78,22 +75,13 @@ func jank(n, max, w int) []int {
 
 		for i := 0; i < w; i++ {
 			t := fakeHash(n+i, max, seed)
-			if !intInSlice(t, out) {
+			if !ContainsInt(t, out) {
 				out = append(out, t)
 			}
 		}
 	}
 
 	return out
-}
-
-func intInSlice(n int, s []int) bool {
-	for _, v := range s {
-		if n == v {
-			return true
-		}
-	}
-	return false
 }
 
 func fakeHash(n, max, seed int) int {
