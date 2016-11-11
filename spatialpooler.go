@@ -15,55 +15,72 @@ import (
 */
 
 type SpatialParams struct {
-	numColumns      int
-	numInputs       int
-	columnHeight    int
-	initConnPercent float64
-	sparsity        float64
-	potentialRadius int
+	numColumns       int
+	numInputs        int
+	columnHeight     int
+	initConnPct      float64
+	potentialPct     float64
+	sparsity         float64
+	potentialRadius  int
+	synPermConnected float64
+	globalInhibition bool
 }
 
 // Return default SpatialParams
 func NewSpatialParams() SpatialParams {
 	return SpatialParams{
-		numColumns:      48,
-		numInputs:       32,
-		columnHeight:    16,
-		initConnPercent: 0.3,
-		sparsity:        0.02,
-		potentialRadius: 5,
+		numColumns:       48,
+		numInputs:        32,
+		columnHeight:     16,
+		initConnPct:      0.5,
+		potentialPct:     0.3,
+		sparsity:         0.02,
+		potentialRadius:  5,
+		synPermConnected: 0.3,
+		globalInhibition: true,
 	}
 }
 
 type SpatialPooler struct {
 	// Params
-	numColumns      int     // number of columns
-	numInputs       int     // number of inputs
-	columnHeight    int     // column height
-	initConnPercent float64 // percent to connect on init
-	sparsity        float64 // sparsity of output vector
-	potentialRadius int     // radius of column's receptive field
+	numColumns       int     // number of columns
+	numInputs        int     // number of inputs
+	columnHeight     int     // column height
+	initConnPct      float64 // % of potential to connect on init
+	potentialPct     float64 // % of receptive field to potentially con
+	sparsity         float64 // sparsity of output vector
+	potentialRadius  int     // radius of column's receptive field
+	synPermConnected float64 // connected permanence threshhold
+	globalInhibition bool    // global inhibition enabled?
 
 	// State
-	columns      SparseBinaryVector // columns
-	potential    SparseBinaryMatrix // map of columns to input space
-	connected    SparseBinaryMatrix // connected synapses
-	numConnected []int              // number of connected syns per col
-	permanences  SparseFloatMatrix  // permanences
-	tieBreaker   []float64          // random tie breaker for ties
+	potential            SparseBinaryMatrix // map of columns to input space
+	connected            SparseBinaryMatrix // connected synapses
+	numConnected         []int              // number of connected syns per col
+	permanences          SparseFloatMatrix  // permanences
+	tieBreaker           []float64          // random tie breaker for ties
+	overlapDutyCycles    []int
+	activeDutyCycles     []int
+	minOverlapDutyCycles []int
+	minActiveDutyCycles  []int
+	boostFactors         []int
 
-	iteration int // iteration counter
+	inhibitionRadius int
+	iteration        int // iteration counter
 }
 
 // Initialize a new SpatialPooler
 func NewSpatialPooler(p SpatialParams) SpatialPooler {
 	sp := SpatialPooler{
-		numColumns:      p.numColumns,
-		numInputs:       p.numInputs,
-		columnHeight:    p.columnHeight,
-		initConnPercent: p.initConnPercent,
-		sparsity:        p.sparsity,
-		potentialRadius: p.potentialRadius,
+		numColumns:       p.numColumns,
+		numInputs:        p.numInputs,
+		columnHeight:     p.columnHeight,
+		initConnPct:      p.initConnPct,
+		potentialPct:     p.potentialPct,
+		sparsity:         p.sparsity,
+		potentialRadius:  p.potentialRadius,
+		synPermConnected: p.synPermConnected,
+		globalInhibition: p.globalInhibition,
 	}
 
 	// Initialize data structures
@@ -77,16 +94,82 @@ func NewSpatialPooler(p SpatialParams) SpatialPooler {
 	for i, _ := range sp.tieBreaker {
 		sp.tieBreaker[i] = 0.01 + rand.Float64()
 	}
-
-	// Initialize permanence values
+	// Initialize sp.potential, sp.permanences, sp.connected, sp.numConnected
 	for i := 0; i < sp.numColumns; i++ {
 		potential := sp.mapPotential(i)
-		fmt.Println(potential)
-		// perm := initPermanance(potential, connPercent)
-		// potential.d[i] = potential ?
+		perm := sp.initPermanence(potential)
+
+		for _, v := range potential {
+			sp.potential.Set(i, v, true)
+		}
+		sp.updateColumnPermanence(i, perm)
 	}
 
+	fmt.Println(sp.potential)
+	fmt.Println(sp.permanences)
+	fmt.Println(sp.connected)
+	fmt.Println(sp.numConnected)
+
+	sp.overlapDutyCycles = make([]int, sp.numColumns)
+	sp.activeDutyCycles = make([]int, sp.numColumns)
+	sp.minOverlapDutyCycles = make([]int, sp.numColumns)
+	sp.minActiveDutyCycles = make([]int, sp.numColumns)
+	sp.boostFactors = make([]int, sp.numColumns)
+	for i, _ := range sp.boostFactors {
+		sp.boostFactors[i] = 1
+	}
+
+	sp.inhibitionRadius = 0
+	sp.updateInhibitionRadius()
+
 	return sp
+}
+
+func (sp SpatialPooler) updateInhibitionRadius() {
+	// no-op, for now TODO
+}
+
+// Update the sp.permanence values for a column
+// TODO : clipping of permanence values to min, max
+func (sp SpatialPooler) updateColumnPermanence(i int, perm []float64) {
+	var c int
+	for k, v := range perm {
+		sp.permanences.Set(i, k, v)
+		if v >= sp.synPermConnected {
+			sp.connected.Set(i, k, true)
+			c++
+		} else {
+			sp.connected.Set(i, k, false)
+		}
+	}
+	sp.numConnected[i] = c
+}
+
+// Map potential connections to initial permanence values
+func (sp SpatialPooler) initPermanence(potential []int) []float64 {
+	perm := make([]float64, len(potential))
+	sd := 0.05
+	for i := 0; i < len(perm); i++ {
+		var p float64
+		chance := rand.Float64()
+		switch {
+		case chance <= sp.initConnPct:
+			// set to right side of normal distribution
+			p = rand.NormFloat64()*sd + sp.synPermConnected
+			for p < sp.synPermConnected {
+				p = rand.NormFloat64()*sd + sp.synPermConnected
+			}
+			perm[i] = p
+		case chance > sp.initConnPct:
+			// set to left side of normal distribution
+			p = rand.NormFloat64()*sd + sp.synPermConnected
+			for p > sp.synPermConnected {
+				p = rand.NormFloat64()*sd + sp.synPermConnected
+			}
+			perm[i] = p
+		}
+	}
+	return perm
 }
 
 // Map a column to its input bits.
@@ -98,7 +181,7 @@ func (sp SpatialPooler) mapPotential(i int) []int {
 
 	// Return random sample of column's receptive field
 	neigh := sp.getInputNeighborhood(center)
-	n := int(float64(len(neigh)) * sp.initConnPercent)
+	n := int(float64(len(neigh)) * sp.potentialPct)
 	sample := UniqueRandInts(n, len(neigh))
 
 	field := make([]int, len(sample))

@@ -13,6 +13,7 @@ import (
 4. The output should have similar sparsity for all inputs and have enough one-bits to handle noise and subsampling.
 */
 
+// All encoders should implement this interface
 type Encoder interface {
 	Encode(interface{}) SparseBinaryVector
 	Decode(SparseBinaryVector) interface{}

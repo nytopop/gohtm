@@ -7,53 +7,88 @@ Dense  : All bits stored
 Sparse : Active bits stored to conserve memory
 */
 
-// Sparse Representations
+// Sparse Float Matrix : map backing
 // ********************************
-type FloatEntry struct {
-	x, y int
-	d    float64
-}
-
 type SparseFloatMatrix struct {
 	x, y int
-	d    []FloatEntry
+	d    map[int]float64
 }
 
 func NewSparseFloatMatrix(x, y int) SparseFloatMatrix {
-	sm := SparseFloatMatrix{}
-	sm.x = x
-	sm.y = y
-	// Allocates for 100% sparsity, probably overkill
-	sm.d = make([]FloatEntry, x*y)
-	return sm
+	return SparseFloatMatrix{
+		x: x,
+		y: y,
+		d: map[int]float64{},
+	}
 }
 
-type BinaryEntry struct {
-	x, y int
+func (sfm SparseFloatMatrix) Key(x, y int) int {
+	return (x % sfm.x) + (y % sfm.y) + (x * sfm.x)
 }
 
+func (sfm SparseFloatMatrix) Set(x, y int, v float64) {
+	sfm.d[sfm.Key(x, y)] = v
+}
+
+func (sfm SparseFloatMatrix) Get(x, y int) float64 {
+	return sfm.d[sfm.Key(x, y)]
+}
+
+func (sfm SparseFloatMatrix) Del(x, y int) {
+	delete(sfm.d, sfm.Key(x, y))
+}
+
+// ********************************
+
+// Sparse Binary Matrix : map backing
+// ********************************
 type SparseBinaryMatrix struct {
 	x, y int
-	d    []BinaryEntry
+	d    map[int]bool
 }
 
 func NewSparseBinaryMatrix(x, y int) SparseBinaryMatrix {
-	sm := SparseBinaryMatrix{}
-	sm.x = x
-	sm.y = y
-	// Allocates for 100% sparsity, probably overkill
-	sm.d = make([]BinaryEntry, x*y)
-	return sm
+	return SparseBinaryMatrix{
+		x: x,
+		y: y,
+		d: map[int]bool{},
+	}
 }
 
+func (sbm SparseBinaryMatrix) Key(x, y int) int {
+	return (x % sbm.x) + (y % sbm.y) + (x * sbm.x)
+}
+
+func (sbm SparseBinaryMatrix) Set(x, y int, v bool) {
+	if v {
+		sbm.d[sbm.Key(x, y)] = true
+	} else {
+		sbm.Del(x, y)
+	}
+}
+
+func (sbm SparseBinaryMatrix) Get(x, y int) bool {
+	return sbm.d[sbm.Key(x, y)]
+}
+
+func (sbm SparseBinaryMatrix) Del(x, y int) {
+	delete(sbm.d, sbm.Key(x, y))
+}
+
+// ********************************
+
+// Sparse Binary Vector : slice backing
+// TODO : convert to map backing
+// ********************************
 type SparseBinaryVector struct {
 	x int
 	d []int
 }
 
 func NewSparseBinaryVector(x int) SparseBinaryVector {
-	sv := SparseBinaryVector{}
-	sv.x = x
+	sv := SparseBinaryVector{
+		x: x,
+	}
 	// Allocates for 100% sparsity, probably overkill
 	//sv.d = make([]int, x)
 	return sv
