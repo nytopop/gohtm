@@ -28,8 +28,8 @@ type RDScalarEncoder struct {
 	buckets map[int][]int
 }
 
-func NewRDScalarEncoder(n, w int, r float64) RDScalarEncoder {
-	return RDScalarEncoder{
+func NewRDScalarEncoder(n, w int, r float64) *RDScalarEncoder {
+	return &RDScalarEncoder{
 		n:       n,
 		w:       w,
 		r:       r,
@@ -37,19 +37,21 @@ func NewRDScalarEncoder(n, w int, r float64) RDScalarEncoder {
 	}
 }
 
-func (rdse RDScalarEncoder) Encode(s interface{}) SparseBinaryVector {
+func (rdse *RDScalarEncoder) Encode(s interface{}) SparseBinaryVector {
 	b := int(s.(float64) / rdse.r)
 	if _, ok := rdse.buckets[b]; !ok {
 		rdse.NewBucket(b)
 	}
 
 	sv := NewSparseBinaryVector(rdse.n)
-	sv.d = rdse.buckets[b]
+	for _, v := range rdse.buckets[b] {
+		sv.Set(v, true)
+	}
 
 	return sv
 }
 
-func (rdse RDScalarEncoder) NewBucket(b int) {
+func (rdse *RDScalarEncoder) NewBucket(b int) {
 	for i := 0; i <= b; i++ {
 		if _, ok := rdse.buckets[i]; !ok {
 			rdse.buckets[i] = jank(i, rdse.n, rdse.w)
@@ -58,7 +60,7 @@ func (rdse RDScalarEncoder) NewBucket(b int) {
 	}
 }
 
-func (rdse RDScalarEncoder) Decode(s SparseBinaryVector) interface{} {
+func (rdse *RDScalarEncoder) Decode(s SparseBinaryVector) interface{} {
 	for k, v := range rdse.buckets {
 		if reflect.DeepEqual(v, s.x) {
 			return float64(k) * rdse.r

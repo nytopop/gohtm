@@ -1,11 +1,33 @@
 package main
 
-/* Sparse Distributed Representations
-Matrix : 2d
-Vector : 1d
-Dense  : All bits stored
-Sparse : Active bits stored to conserve memory
-*/
+// SDR Utility Functions
+// ********************************
+
+/* Compute the union of input vectors. Returns a SparseBinaryVector comprising all active bits in inputs. */
+func VectorUnion(input ...SparseBinaryVector) SparseBinaryVector {
+	for _, root := range input {
+		for _, cmp := range input {
+			if root.x != cmp.x {
+				panic("Mismatched vector lengths in VectorUnion()!")
+			}
+		}
+	}
+
+	out := NewSparseBinaryVector(input[0].x)
+
+	var bit bool
+	for i := 0; i < input[0].x; i++ {
+		bit = true
+		for _, sbv := range input {
+			bit = sbv.Get(i) && bit
+		}
+		out.Set(i, bit)
+	}
+
+	return out
+}
+
+// ********************************
 
 // Sparse Float Matrix : map backing
 // ********************************
@@ -22,20 +44,35 @@ func NewSparseFloatMatrix(x, y int) SparseFloatMatrix {
 	}
 }
 
-func (sfm SparseFloatMatrix) Key(x, y int) int {
+func (sfm *SparseFloatMatrix) ColumnKeys(x int) []int {
+	keys := make([]int, sfm.y)
+	for y := 0; y < sfm.y; y++ {
+		keys[y] = sfm.Key(x, y)
+	}
+	return keys
+}
+
+func (sfm *SparseFloatMatrix) Key(x, y int) int {
 	return (x % sfm.x) + (y % sfm.y) + (x * sfm.x)
 }
 
-func (sfm SparseFloatMatrix) Set(x, y int, v float64) {
+func (sfm *SparseFloatMatrix) Set(x, y int, v float64) {
 	sfm.d[sfm.Key(x, y)] = v
 }
 
-func (sfm SparseFloatMatrix) Get(x, y int) float64 {
+func (sfm *SparseFloatMatrix) Get(x, y int) float64 {
 	return sfm.d[sfm.Key(x, y)]
 }
 
-func (sfm SparseFloatMatrix) Del(x, y int) {
+func (sfm *SparseFloatMatrix) Del(x, y int) {
 	delete(sfm.d, sfm.Key(x, y))
+}
+
+func (sfm *SparseFloatMatrix) Exists(x, y int) bool {
+	if _, ok := sfm.d[sfm.Key(x, y)]; ok {
+		return true
+	}
+	return false
 }
 
 // ********************************
@@ -55,11 +92,19 @@ func NewSparseBinaryMatrix(x, y int) SparseBinaryMatrix {
 	}
 }
 
-func (sbm SparseBinaryMatrix) Key(x, y int) int {
+func (sbm *SparseBinaryMatrix) ColumnKeys(x int) []int {
+	keys := make([]int, sbm.y)
+	for y := 0; y < sbm.y; y++ {
+		keys[y] = sbm.Key(x, y)
+	}
+	return keys
+}
+
+func (sbm *SparseBinaryMatrix) Key(x, y int) int {
 	return (x % sbm.x) + (y % sbm.y) + (x * sbm.x)
 }
 
-func (sbm SparseBinaryMatrix) Set(x, y int, v bool) {
+func (sbm *SparseBinaryMatrix) Set(x, y int, v bool) {
 	if v {
 		sbm.d[sbm.Key(x, y)] = true
 	} else {
@@ -67,53 +112,64 @@ func (sbm SparseBinaryMatrix) Set(x, y int, v bool) {
 	}
 }
 
-func (sbm SparseBinaryMatrix) Get(x, y int) bool {
+func (sbm *SparseBinaryMatrix) Get(x, y int) bool {
 	return sbm.d[sbm.Key(x, y)]
 }
 
-func (sbm SparseBinaryMatrix) Del(x, y int) {
+func (sbm *SparseBinaryMatrix) Del(x, y int) {
 	delete(sbm.d, sbm.Key(x, y))
 }
 
 // ********************************
 
-// Sparse Binary Vector : slice backing
-// TODO : convert to map backing
+// Sparse Binary Vector : map backing
 // ********************************
 type SparseBinaryVector struct {
 	x int
-	d []int
+	d map[int]bool
 }
 
 func NewSparseBinaryVector(x int) SparseBinaryVector {
-	sv := SparseBinaryVector{
+	return SparseBinaryVector{
 		x: x,
+		d: map[int]bool{},
 	}
-	// Allocates for 100% sparsity, probably overkill
-	//sv.d = make([]int, x)
-	return sv
 }
 
-func (sv SparseBinaryVector) Pretty() string {
+func (sbv *SparseBinaryVector) Set(x int, v bool) {
+	if v {
+		sbv.d[x] = true
+	} else {
+		sbv.Del(x)
+	}
+}
+
+func (sbv *SparseBinaryVector) Get(x int) bool {
+	return sbv.d[x]
+}
+
+func (sbv *SparseBinaryVector) Del(x int) {
+	delete(sbv.d, x)
+}
+
+func (sbv *SparseBinaryVector) Dense() []bool {
+	dv := make([]bool, sbv.x)
+	for i, _ := range dv {
+		dv[i] = sbv.Get(i)
+	}
+	return dv
+}
+
+func (sbv *SparseBinaryVector) Pretty() string {
 	out := ""
-	dv := sv.Dense()
-	for x := 0; x < sv.x; x++ {
-		if dv[x] {
+	for i := 0; i < sbv.x; i++ {
+		if sbv.Get(i) {
 			out += "1"
 		} else {
 			out += "0"
 		}
 	}
 	return out
-}
-
-// This function is broken, returns '1' in pos 0 of empty vector
-func (sv SparseBinaryVector) Dense() []bool {
-	dv := make([]bool, sv.x)
-	for _, i := range sv.d {
-		dv[i] = true
-	}
-	return dv
 }
 
 // ********************************
