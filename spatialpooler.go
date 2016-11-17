@@ -24,21 +24,21 @@ type SpatialParams struct {
 
 func NewSpatialParams() SpatialParams {
 	return SpatialParams{
-		numColumns:          2048,
-		numInputs:           400,
-		potentialRadius:     50,
-		potentialPct:        0.5,
-		initConnPct:         0.3,
-		synPermConnected:    0.3,
-		globalInhibition:    true,
-		localAreaDensity:    0.02,
-		stimulusThreshold:   3,
-		synPermActiveMod:    0.05,
-		synPermInactiveMod:  0.03,
-		dutyCyclePeriod:     8,
-		minOverlapDutyCycle: 0.04,
-		minActiveDutyCycle:  0.04,
-		maxBoost:            8.0,
+		numColumns:          2048, // size of output vector
+		numInputs:           400,  // size of input vector
+		potentialRadius:     8,    // # of potential synapses
+		potentialPct:        0.5,  // % sample of potentials
+		initConnPct:         0.3,  // % synapses to connect on init
+		synPermConnected:    0.3,  // synapse connected threshold
+		globalInhibition:    true, // enable global inhibition
+		localAreaDensity:    0.02, // sparsity of output vector
+		stimulusThreshold:   0,    // used for variable sparsity inputs
+		synPermActiveMod:    0.05, // permanence increment
+		synPermInactiveMod:  0.03, // permanence decrement
+		dutyCyclePeriod:     8,    // duty cycle period, in cycles
+		minOverlapDutyCycle: 0.04, // used to bump weak columns
+		minActiveDutyCycle:  0.04, // used to boost weak columns
+		maxBoost:            8.0,  // maximum boost value
 	}
 }
 
@@ -200,7 +200,7 @@ func (sp *SpatialPooler) Compute(input SparseBinaryVector, learn bool) SparseBin
 	if sp.globalInhibition || sp.inhibitionRadius > sp.numColumns {
 		sp.inhibitColumnsGlobal(learn)
 	} else {
-		sp.inhibitColumnsLocal()
+		sp.inhibitColumnsLocal(learn)
 	}
 
 	if learn {
@@ -311,6 +311,8 @@ func (sp *SpatialPooler) inhibitColumnsGlobal(learn bool) {
 
 	n := int(sp.localAreaDensity * float64(sp.numColumns))
 	start := len(winners) - n
+
+	// Enforce Stimulus Threshold : useful for varying sparsity input
 	for start < len(winners) {
 		i := winners[start]
 		if overlaps[i] >= sp.stimulusThreshold {
@@ -324,14 +326,14 @@ func (sp *SpatialPooler) inhibitColumnsGlobal(learn bool) {
 		sp.cols[col].active = false
 	}
 
-	winners = Reverse(winners[start:])
+	winners = Reverse(winners[start:]) // [start:]
 	for _, col := range winners {
 		sp.cols[col].active = true
 	}
 }
 
-/**/
-func (sp *SpatialPooler) inhibitColumnsLocal() {
+/* Inhibit columns locally. This method sets the active state on each column. */
+func (sp *SpatialPooler) inhibitColumnsLocal(learn bool) {
 }
 
 /* Update the overlap score on all columns. The overlap is the number of connected synapses terminating in an active input bit. */
