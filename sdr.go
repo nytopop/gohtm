@@ -44,6 +44,7 @@ func NewSparseFloatMatrix(x, y int) SparseFloatMatrix {
 	}
 }
 
+/*
 func (sfm *SparseFloatMatrix) ColumnKeys(x int) []int {
 	keys := make([]int, sfm.y)
 	for y := 0; y < sfm.y; y++ {
@@ -51,6 +52,7 @@ func (sfm *SparseFloatMatrix) ColumnKeys(x int) []int {
 	}
 	return keys
 }
+*/
 
 func (sfm *SparseFloatMatrix) Key(x, y int) int {
 	return (x % sfm.x) + (y % sfm.y) + (x * sfm.x)
@@ -92,13 +94,14 @@ func NewSparseBinaryMatrix(x, y int) SparseBinaryMatrix {
 	}
 }
 
+/*
 func (sbm *SparseBinaryMatrix) ColumnKeys(x int) []int {
 	keys := make([]int, sbm.y)
 	for y := 0; y < sbm.y; y++ {
 		keys[y] = sbm.Key(x, y)
 	}
 	return keys
-}
+}*/
 
 func (sbm *SparseBinaryMatrix) Key(x, y int) int {
 	return (x % sbm.x) + (y % sbm.y) + (x * sbm.x)
@@ -150,6 +153,10 @@ func (sbv *SparseBinaryVector) Get(x int) bool {
 
 func (sbv *SparseBinaryVector) Del(x int) {
 	delete(sbv.d, x)
+}
+
+func (sbv *SparseBinaryVector) Sparsity() float64 {
+	return float64(len(sbv.d)) / float64(sbv.x)
 }
 
 func (sbv *SparseBinaryVector) Dense() []bool {
