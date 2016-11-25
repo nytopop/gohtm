@@ -8,7 +8,7 @@ import (
 /* Utility functions */
 
 /* Check if []int s contains int s. Returns true if yes. */
-func ContainsInt(n int, s []int) bool {
+func containsInt(n int, s []int) bool {
 	for _, v := range s {
 		if n == v {
 			return true
@@ -18,10 +18,10 @@ func ContainsInt(n int, s []int) bool {
 }
 
 /* Return slice of n random integers, up to max size. All integers returned will be unique, that is, there should be no duplicates in the returned slice. */
-func UniqueRandInts(n, max int) (rnd []int) {
+func uniqueRandInts(n, max int) (rnd []int) {
 	for len(rnd) < n {
 		r := rand.Intn(max)
-		if !ContainsInt(r, rnd) {
+		if !containsInt(r, rnd) {
 			rnd = append(rnd, r)
 		}
 	}
@@ -29,18 +29,18 @@ func UniqueRandInts(n, max int) (rnd []int) {
 }
 
 // indice sortable slice
-type Slice struct {
+type slice struct {
 	sort.Interface
 	idx []int
 }
 
-func (s Slice) Swap(i, j int) {
+func (s slice) Swap(i, j int) {
 	s.Interface.Swap(i, j)
 	s.idx[i], s.idx[j] = s.idx[j], s.idx[i]
 }
 
-func NewSlice(ints []int) *Slice {
-	s := &Slice{
+func newSlice(ints []int) *slice {
+	s := &slice{
 		Interface: sort.IntSlice(ints),
 		idx:       make([]int, len(ints)),
 	}
@@ -51,14 +51,14 @@ func NewSlice(ints []int) *Slice {
 }
 
 /* Sorts the input slice in ascending order, and returns the indices of the original slice in sorted order. */
-func SortIndices(data []int) []int {
-	sorted := NewSlice(data)
+func sortIndices(data []int) []int {
+	sorted := newSlice(data)
 	sort.Sort(sorted)
 	return sorted.idx
 }
 
 /* Returns a reversed version of the input slice. */
-func Reverse(data []int) []int {
+func reverse(data []int) []int {
 	for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
 		data[i], data[j] = data[j], data[i]
 	}

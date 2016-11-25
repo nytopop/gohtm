@@ -169,7 +169,7 @@ func (sp *SpatialPooler) mapPotential(col int) {
 
 	nbs := sp.getInputNeighbors(center)
 	n := int(float64(len(nbs)) * sp.PotentialPct)
-	sample := UniqueRandInts(n, len(nbs))
+	sample := uniqueRandInts(n, len(nbs))
 
 	sp.Cols[col].PSyns = make([]ProximalSynapse, len(sample))
 	for i, j := range sample {
@@ -319,7 +319,7 @@ func (sp *SpatialPooler) inhibitColumnsGlobal(learn bool) {
 			overlaps[i] = col.Overlap
 		}
 	}
-	winners := SortIndices(overlaps)
+	winners := sortIndices(overlaps)
 
 	n := int(sp.LocalAreaDensity * float64(sp.NumColumns))
 	start := len(winners) - n
@@ -338,7 +338,7 @@ func (sp *SpatialPooler) inhibitColumnsGlobal(learn bool) {
 		sp.Cols[col].Active = false
 	}
 
-	winners = Reverse(winners[start:]) // [start:]
+	winners = reverse(winners[start:]) // [start:]
 	for _, col := range winners {
 		sp.Cols[col].Active = true
 	}

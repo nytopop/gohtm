@@ -79,7 +79,7 @@ func jank(n, max, w int) []int {
 
 		for i := 0; i < w; i++ {
 			t := fakeHash(n+i, max, seed)
-			if !ContainsInt(t, out) {
+			if !containsInt(t, out) {
 				out = append(out, t)
 			}
 		}
