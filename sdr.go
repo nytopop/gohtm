@@ -44,17 +44,10 @@ func NewSparseFloatMatrix(x, y int) SparseFloatMatrix {
 	}
 }
 
-/*
-func (sfm *SparseFloatMatrix) ColumnKeys(x int) []int {
-	keys := make([]int, sfm.y)
-	for y := 0; y < sfm.y; y++ {
-		keys[y] = sfm.Key(x, y)
-	}
-	return keys
-}
-*/
-
 func (sfm *SparseFloatMatrix) Key(x, y int) int {
+	if x >= sfm.x || y >= sfm.y {
+		panic("matrix out of bounds!")
+	}
 	return (x % sfm.x) + (y % sfm.y) + (x * sfm.x)
 }
 
@@ -94,16 +87,10 @@ func NewSparseBinaryMatrix(x, y int) SparseBinaryMatrix {
 	}
 }
 
-/*
-func (sbm *SparseBinaryMatrix) ColumnKeys(x int) []int {
-	keys := make([]int, sbm.y)
-	for y := 0; y < sbm.y; y++ {
-		keys[y] = sbm.Key(x, y)
-	}
-	return keys
-}*/
-
 func (sbm *SparseBinaryMatrix) Key(x, y int) int {
+	if x >= sbm.x || y >= sbm.y {
+		panic("matrix out of bounds!")
+	}
 	return (x % sbm.x) + (y % sbm.y) + (x * sbm.x)
 }
 

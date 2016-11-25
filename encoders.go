@@ -28,6 +28,7 @@ type RDScalarEncoder struct {
 	buckets map[int][]int
 }
 
+// Return a new encoder
 func NewRDScalarEncoder(n, w int, r float64) *RDScalarEncoder {
 	return &RDScalarEncoder{
 		n:       n,
