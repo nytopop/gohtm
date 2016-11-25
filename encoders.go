@@ -20,7 +20,6 @@ type Encoder interface {
 }
 
 // Random Distributed Scalar Encoder
-// **********************************
 type RDScalarEncoder struct {
 	n       int
 	w       int
@@ -95,5 +94,3 @@ func fakeHash(n, max, seed int) int {
 	}
 	return rand.Intn(max)
 }
-
-// ***********************************

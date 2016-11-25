@@ -1,7 +1,6 @@
 package gohtm
 
 // SDR Utility Functions
-// ********************************
 
 /* Compute the union of input vectors. Returns a SparseBinaryVector comprising all active bits in inputs. */
 func VectorUnion(input ...SparseBinaryVector) SparseBinaryVector {
@@ -27,10 +26,7 @@ func VectorUnion(input ...SparseBinaryVector) SparseBinaryVector {
 	return out
 }
 
-// ********************************
-
 // Sparse Float Matrix : map backing
-// ********************************
 type SparseFloatMatrix struct {
 	x, y int
 	d    map[int]float64
@@ -70,10 +66,7 @@ func (sfm *SparseFloatMatrix) Exists(x, y int) bool {
 	return false
 }
 
-// ********************************
-
 // Sparse Binary Matrix : map backing
-// ********************************
 type SparseBinaryMatrix struct {
 	x, y int
 	d    map[int]bool
@@ -110,10 +103,7 @@ func (sbm *SparseBinaryMatrix) Del(x, y int) {
 	delete(sbm.d, sbm.Key(x, y))
 }
 
-// ********************************
-
 // Sparse Binary Vector : map backing
-// ********************************
 type SparseBinaryVector struct {
 	x int
 	d map[int]bool
@@ -165,5 +155,3 @@ func (sbv *SparseBinaryVector) Pretty() string {
 	}
 	return out
 }
-
-// ********************************
