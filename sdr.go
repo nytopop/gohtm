@@ -26,6 +26,7 @@ func VectorUnion(input ...SparseBinaryVector) SparseBinaryVector {
 	return out
 }
 
+/*
 // Sparse Float Matrix : map backing
 type SparseFloatMatrix struct {
 	x, y int
@@ -102,6 +103,7 @@ func (sbm *SparseBinaryMatrix) Get(x, y int) bool {
 func (sbm *SparseBinaryMatrix) Del(x, y int) {
 	delete(sbm.d, sbm.Key(x, y))
 }
+*/
 
 // Sparse Binary Vector : map backing
 type SparseBinaryVector struct {

@@ -8,115 +8,116 @@ import (
 
 /* Spatial Pooler */
 
+// SpatialParams : Parameters for SpatialPooler initialization.
 type SpatialParams struct {
-	NumColumns          int
-	NumInputs           int
-	PotentialRadius     int
-	PotentialPct        float64
-	InitConnPct         float64
-	SynPermConnected    float64
-	GlobalInhibition    bool
-	LocalAreaDensity    float64
-	StimulusThreshold   int
-	SynPermActiveMod    float64
-	SynPermInactiveMod  float64
-	DutyCyclePeriod     int
-	MinOverlapDutyCycle float64
-	MinActiveDutyCycle  float64
-	MaxBoost            float64
+	numColumns          int
+	numInputs           int
+	potentialRadius     int
+	potentialPct        float64
+	initConnPct         float64
+	synPermConnected    float64
+	globalInhibition    bool
+	localAreaDensity    float64
+	stimulusThreshold   int
+	synPermActiveMod    float64
+	synPermInactiveMod  float64
+	dutyCyclePeriod     int
+	minOverlapDutyCycle float64
+	minActiveDutyCycle  float64
+	maxBoost            float64
 }
 
 func NewSpatialParams() SpatialParams {
 	return SpatialParams{
-		NumColumns:          2048, // size of output vector
-		NumInputs:           400,  // size of input vector
-		PotentialRadius:     8,    // # of potential synapses
-		PotentialPct:        0.5,  // % sample of potentials
-		InitConnPct:         0.3,  // % synapses to connect on init
-		SynPermConnected:    0.3,  // synapse Connected threshold
-		GlobalInhibition:    true, // enable global inhibition
-		LocalAreaDensity:    0.02, // sparsity of output vector
-		StimulusThreshold:   0,    // used for variable sparsity inputs
-		SynPermActiveMod:    0.05, // Permanence increment
-		SynPermInactiveMod:  0.03, // Permanence decrement
-		DutyCyclePeriod:     8,    // duty cycle period, in cycles
-		MinOverlapDutyCycle: 0.04, // used to bump weak columns
-		MinActiveDutyCycle:  0.04, // used to boost weak columns
-		MaxBoost:            8.0,  // maximum boost value
+		numColumns:          2048, // size of output vector
+		numInputs:           400,  // size of input vector
+		potentialRadius:     8,    // # of potential synapses
+		potentialPct:        0.5,  // % sample of potentials
+		initConnPct:         0.3,  // % synapses to connect on init
+		synPermConnected:    0.3,  // synapse connected threshold
+		globalInhibition:    true, // enable global inhibition
+		localAreaDensity:    0.02, // sparsity of output vector
+		stimulusThreshold:   0,    // used for variable sparsity inputs
+		synPermActiveMod:    0.05, // permanence increment
+		synPermInactiveMod:  0.03, // permanence decrement
+		dutyCyclePeriod:     8,    // duty cycle period, in cycles
+		minOverlapDutyCycle: 0.04, // used to bump weak columns
+		minActiveDutyCycle:  0.04, // used to boost weak columns
+		maxBoost:            8.0,  // maximum boost value
 	}
 }
 
-type ProximalSynapse struct {
-	Idx       int     // input index
-	Perm      float64 // Permanence value
-	Connected bool    // Connected ?
+type proximalSynapse struct {
+	idx       int     // input index
+	perm      float64 // permanence value
+	connected bool    // connected ?
 }
 
-type SPColumn struct {
-	PSyns            []ProximalSynapse
-	Overlap          int
-	BoostedOverlap   int
-	BoostFactor      float64
-	OverlapDutyCycle float64
-	ActiveDutyCycle  float64
-	Active           bool
+type spColumn struct {
+	psyns            []proximalSynapse
+	overlap          int
+	boostedOverlap   int
+	boostFactor      float64
+	overlapDutyCycle float64
+	activeDutyCycle  float64
+	active           bool
 }
 
 type SpatialPooler struct {
 	// state
-	Cols             []SPColumn
+	cols             []spColumn
 	input            SparseBinaryVector
-	InhibitionRadius int
-	Iteration        int
-	LearnIteration   int
+	inhibitionRadius int
+	iteration        int
+	learnIteration   int
 
 	// params
-	NumColumns          int
-	NumInputs           int
-	PotentialRadius     int
-	PotentialPct        float64
-	InitConnPct         float64
-	SynPermConnected    float64
-	GlobalInhibition    bool
-	LocalAreaDensity    float64
-	StimulusThreshold   int
-	SynPermActiveMod    float64
-	SynPermInactiveMod  float64
-	DutyCyclePeriod     int
-	MinOverlapDutyCycle float64
-	MinActiveDutyCycle  float64
-	MaxBoost            float64
+	numColumns          int
+	numInputs           int
+	potentialRadius     int
+	potentialPct        float64
+	initConnPct         float64
+	synPermConnected    float64
+	globalInhibition    bool
+	localAreaDensity    float64
+	stimulusThreshold   int
+	synPermActiveMod    float64
+	synPermInactiveMod  float64
+	dutyCyclePeriod     int
+	minOverlapDutyCycle float64
+	minActiveDutyCycle  float64
+	maxBoost            float64
 }
 
 /* Initialize a new SpatialPooler with supplied SpatialParams. */
 func NewSpatialPooler(p SpatialParams) SpatialPooler {
 	sp := SpatialPooler{
-		NumColumns:          p.NumColumns,
-		NumInputs:           p.NumInputs,
-		PotentialRadius:     p.PotentialRadius,
-		PotentialPct:        p.PotentialPct,
-		InitConnPct:         p.InitConnPct,
-		SynPermConnected:    p.SynPermConnected,
-		GlobalInhibition:    p.GlobalInhibition,
-		LocalAreaDensity:    p.LocalAreaDensity,
-		StimulusThreshold:   p.StimulusThreshold,
-		SynPermActiveMod:    p.SynPermActiveMod,
-		SynPermInactiveMod:  p.SynPermInactiveMod,
-		DutyCyclePeriod:     p.DutyCyclePeriod,
-		MinOverlapDutyCycle: p.MinOverlapDutyCycle,
-		MinActiveDutyCycle:  p.MinActiveDutyCycle,
-		MaxBoost:            p.MaxBoost,
-		Iteration:           1,
-		LearnIteration:      1,
+		numColumns:          p.numColumns,
+		numInputs:           p.numInputs,
+		potentialRadius:     p.potentialRadius,
+		potentialPct:        p.potentialPct,
+		initConnPct:         p.initConnPct,
+		synPermConnected:    p.synPermConnected,
+		globalInhibition:    p.globalInhibition,
+		localAreaDensity:    p.localAreaDensity,
+		stimulusThreshold:   p.stimulusThreshold,
+		synPermActiveMod:    p.synPermActiveMod,
+		synPermInactiveMod:  p.synPermInactiveMod,
+		dutyCyclePeriod:     p.dutyCyclePeriod,
+		minOverlapDutyCycle: p.minOverlapDutyCycle,
+		minActiveDutyCycle:  p.minActiveDutyCycle,
+		maxBoost:            p.maxBoost,
+		iteration:           1,
+		learnIteration:      1,
 	}
 
-	sp.Cols = make([]SPColumn, p.NumColumns)
+	sp.cols = make([]spColumn, p.numColumns)
 
-	for i, _ := range sp.Cols {
+	for i, _ := range sp.cols {
 		sp.mapPotential(i)
-		sp.initPermanence(i)
-		sp.updateConnected(i)
-		sp.Cols[i].BoostFactor = 1
+		sp.initpermanence(i)
+		sp.updateconnected(i)
+		sp.cols[i].boostFactor = 1
 	}
 
 	return sp
@@ -127,67 +128,67 @@ func (sp SpatialPooler) Save(filename string) {
 	ioutil.WriteFile(filename, js, 0644)
 }
 
-/* Updates the Connected value on specified column's synapses. This should be called every time a synapse is modified. */
-func (sp *SpatialPooler) updateConnected(col int) {
-	for i, j := range sp.Cols[col].PSyns {
-		if j.Perm >= sp.SynPermConnected {
-			sp.Cols[col].PSyns[i].Connected = true
+/* Updates the connected value on specified column's synapses. This should be called every time a synapse is modified. */
+func (sp *SpatialPooler) updateconnected(col int) {
+	for i, j := range sp.cols[col].psyns {
+		if j.perm >= sp.synPermConnected {
+			sp.cols[col].psyns[i].connected = true
 		} else {
-			sp.Cols[col].PSyns[i].Connected = false
+			sp.cols[col].psyns[i].connected = false
 		}
 	}
 }
 
 // TODO : Clipping min/max values
-/* Initializes Permanence of synapses on specified column. This method uses a normal distribution centering around the SynPermConnected parameter, and intializes columns as Connected based on the InitConnPct parameter. */
-func (sp *SpatialPooler) initPermanence(col int) {
+/* Initializes permanence of synapses on specified column. This method uses a normal distribution centering around the synPermConnected parameter, and intializes columns as connected based on the initConnPct parameter. */
+func (sp *SpatialPooler) initpermanence(col int) {
 	sd := 0.05
 	var p float64
-	for i, _ := range sp.Cols[col].PSyns {
+	for i, _ := range sp.cols[col].psyns {
 		chance := rand.Float64()
 		switch {
-		case chance <= sp.InitConnPct:
-			p = rand.NormFloat64()*sd + sp.SynPermConnected
-			for p < sp.SynPermConnected {
-				p = rand.NormFloat64()*sd + sp.SynPermConnected
+		case chance <= sp.initConnPct:
+			p = rand.NormFloat64()*sd + sp.synPermConnected
+			for p < sp.synPermConnected {
+				p = rand.NormFloat64()*sd + sp.synPermConnected
 			}
-			sp.Cols[col].PSyns[i].Perm = p
-		case chance > sp.InitConnPct:
-			p = rand.NormFloat64()*sd + sp.SynPermConnected
-			for p >= sp.SynPermConnected {
-				p = rand.NormFloat64()*sd + sp.SynPermConnected
+			sp.cols[col].psyns[i].perm = p
+		case chance > sp.initConnPct:
+			p = rand.NormFloat64()*sd + sp.synPermConnected
+			for p >= sp.synPermConnected {
+				p = rand.NormFloat64()*sd + sp.synPermConnected
 			}
-			sp.Cols[col].PSyns[i].Perm = p
+			sp.cols[col].psyns[i].perm = p
 		}
 	}
 }
 
 /* Creates potential synapses on specified column. This method will randomly sample the receptive field of a column, and sets the potential synapses to the sampled indices. */
 func (sp *SpatialPooler) mapPotential(col int) {
-	ratio := float64(col) / float64(sp.NumColumns)
-	center := int(float64(sp.NumInputs) * ratio)
+	ratio := float64(col) / float64(sp.numColumns)
+	center := int(float64(sp.numInputs) * ratio)
 
 	nbs := sp.getInputNeighbors(center)
-	n := int(float64(len(nbs)) * sp.PotentialPct)
+	n := int(float64(len(nbs)) * sp.potentialPct)
 	sample := uniqueRandInts(n, len(nbs))
 
-	sp.Cols[col].PSyns = make([]ProximalSynapse, len(sample))
+	sp.cols[col].psyns = make([]proximalSynapse, len(sample))
 	for i, j := range sample {
-		sp.Cols[col].PSyns[i].Idx = nbs[j]
+		sp.cols[col].psyns[i].idx = nbs[j]
 	}
 }
 
 /* Returns neighborhood of specified input index. Uses wraparound by default. */
 func (sp *SpatialPooler) getInputNeighbors(center int) (nbs []int) {
-	r := sp.PotentialRadius
+	r := sp.potentialRadius
 	for i := center - r; i <= center+r; i++ {
 		switch {
-		case i >= 0 && i <= sp.NumInputs-1:
+		case i >= 0 && i <= sp.numInputs-1:
 			nbs = append(nbs, i)
 		case i < 0:
-			nbs = append(nbs, i+sp.NumInputs)
-		case i > sp.NumInputs-1:
-			nbs = append(nbs, i-sp.NumInputs)
+			nbs = append(nbs, i+sp.numInputs)
+		case i > sp.numInputs-1:
+			nbs = append(nbs, i-sp.numInputs)
 		}
 	}
 	return
@@ -195,18 +196,18 @@ func (sp *SpatialPooler) getInputNeighbors(center int) (nbs []int) {
 
 /* Compute active columns for a given input vector. */
 func (sp *SpatialPooler) Compute(input SparseBinaryVector, learn bool) SparseBinaryVector {
-	if input.x != sp.NumInputs {
+	if input.x != sp.numInputs {
 		panic("Mismatched input dimensions!")
 	}
 	sp.input = input
-	sp.Iteration += 1
+	sp.iteration++
 	if learn {
-		sp.LearnIteration += 1
+		sp.learnIteration++
 	}
 
-	sp.updateOverlaps()
+	sp.updateoverlaps()
 
-	if sp.GlobalInhibition || sp.InhibitionRadius > sp.NumColumns {
+	if sp.globalInhibition || sp.inhibitionRadius > sp.numColumns {
 		sp.inhibitColumnsGlobal(learn)
 	} else {
 		sp.inhibitColumnsLocal(learn)
@@ -214,133 +215,133 @@ func (sp *SpatialPooler) Compute(input SparseBinaryVector, learn bool) SparseBin
 
 	if learn {
 		sp.adaptSynapses()
-		sp.updateOverlapDutyCycles()
-		sp.updateActiveDutyCycles()
+		sp.updateoverlapDutyCycles()
+		sp.updateactiveDutyCycles()
 		sp.bumpWeakColumns()
-		sp.updateBoostFactors()
+		sp.updateboostFactors()
 	}
 
 	// return active columns
-	active := NewSparseBinaryVector(sp.NumColumns)
-	for i, col := range sp.Cols {
-		active.Set(i, col.Active)
+	active := NewSparseBinaryVector(sp.numColumns)
+	for i, col := range sp.cols {
+		active.Set(i, col.active)
 	}
 	return active
 }
 
 /* Update boost factors for all columns. The boost factors are based on the activation duty cycle of each column; columns that activate infrequently are boosted higher, columns that are active enough of the time are left at 1.0 boost. */
-func (sp *SpatialPooler) updateBoostFactors() {
-	for i, col := range sp.Cols {
-		if col.ActiveDutyCycle < sp.MinActiveDutyCycle {
-			boost := ((1 - sp.MaxBoost) / sp.MinActiveDutyCycle *
-				col.ActiveDutyCycle) + sp.MaxBoost
-			sp.Cols[i].BoostFactor = boost
+func (sp *SpatialPooler) updateboostFactors() {
+	for i, col := range sp.cols {
+		if col.activeDutyCycle < sp.minActiveDutyCycle {
+			boost := ((1 - sp.maxBoost) / sp.minActiveDutyCycle *
+				col.activeDutyCycle) + sp.maxBoost
+			sp.cols[i].boostFactor = boost
 		}
 	}
 }
 
-/* Increase Permanence values for all synapses on weak columns. */
+/* Increase permanence values for all synapses on weak columns. */
 func (sp *SpatialPooler) bumpWeakColumns() {
-	for i, col := range sp.Cols {
-		if col.OverlapDutyCycle < sp.MinOverlapDutyCycle {
-			for j, _ := range col.PSyns {
-				sp.Cols[i].PSyns[j].Perm += sp.SynPermActiveMod
+	for i, col := range sp.cols {
+		if col.overlapDutyCycle < sp.minOverlapDutyCycle {
+			for j, _ := range col.psyns {
+				sp.cols[i].psyns[j].perm += sp.synPermActiveMod
 			}
-			sp.updateConnected(i)
+			sp.updateconnected(i)
 		}
 	}
 }
 
 /**/
-func (sp *SpatialPooler) updateOverlapDutyCycles() {
-	period := sp.DutyCyclePeriod
-	if period > sp.Iteration {
-		period = sp.Iteration
+func (sp *SpatialPooler) updateoverlapDutyCycles() {
+	period := sp.dutyCyclePeriod
+	if period > sp.iteration {
+		period = sp.iteration
 	}
 
 	var o float64
-	for i, col := range sp.Cols {
-		if col.Overlap > 0 {
+	for i, col := range sp.cols {
+		if col.overlap > 0 {
 			o = 1.0
 		} else {
 			o = 0.0
 		}
-		cycle := (col.OverlapDutyCycle*float64(period-1) + o) /
+		cycle := (col.overlapDutyCycle*float64(period-1) + o) /
 			float64(period)
-		sp.Cols[i].OverlapDutyCycle = cycle
+		sp.cols[i].overlapDutyCycle = cycle
 	}
 }
 
 /**/
-func (sp *SpatialPooler) updateActiveDutyCycles() {
-	period := sp.DutyCyclePeriod
-	if period > sp.Iteration {
-		period = sp.Iteration
+func (sp *SpatialPooler) updateactiveDutyCycles() {
+	period := sp.dutyCyclePeriod
+	if period > sp.iteration {
+		period = sp.iteration
 	}
 
 	var a float64
-	for i, col := range sp.Cols {
-		if col.Active {
+	for i, col := range sp.cols {
+		if col.active {
 			a = 1.0
 		} else {
 			a = 0.0
 		}
-		cycle := (col.ActiveDutyCycle*float64(period-1) + a) /
+		cycle := (col.activeDutyCycle*float64(period-1) + a) /
 			float64(period)
-		sp.Cols[i].ActiveDutyCycle = cycle
+		sp.cols[i].activeDutyCycle = cycle
 	}
 }
 
-/* Adapt Permanence values of synapses based on the input vector and currently active columns post-inhibition. Permanences for synapses Connected to active inputs are increased, and those Connected to inactive inputs are decreased. */
+/* Adapt permanence values of synapses based on the input vector and currently active columns post-inhibition. permanences for synapses connected to active inputs are increased, and those connected to inactive inputs are decreased. */
 func (sp *SpatialPooler) adaptSynapses() {
-	for i, col := range sp.Cols {
-		if col.Active {
-			for j, syn := range sp.Cols[i].PSyns {
-				if sp.input.Get(syn.Idx) {
-					sp.Cols[i].PSyns[j].Perm += sp.SynPermActiveMod
+	for i, col := range sp.cols {
+		if col.active {
+			for j, syn := range sp.cols[i].psyns {
+				if sp.input.Get(syn.idx) {
+					sp.cols[i].psyns[j].perm += sp.synPermActiveMod
 				} else {
-					sp.Cols[i].PSyns[j].Perm -= sp.SynPermInactiveMod
+					sp.cols[i].psyns[j].perm -= sp.synPermInactiveMod
 				}
 			}
-			sp.updateConnected(i)
+			sp.updateconnected(i)
 		}
 	}
 }
 
 /* Inhibit columns globally. This method sets the active state on each column. */
 func (sp *SpatialPooler) inhibitColumnsGlobal(learn bool) {
-	overlaps := make([]int, sp.NumColumns)
+	overlaps := make([]int, sp.numColumns)
 	if learn {
-		for i, col := range sp.Cols {
-			overlaps[i] = col.BoostedOverlap
+		for i, col := range sp.cols {
+			overlaps[i] = col.boostedOverlap
 		}
 	} else {
-		for i, col := range sp.Cols {
-			overlaps[i] = col.Overlap
+		for i, col := range sp.cols {
+			overlaps[i] = col.overlap
 		}
 	}
 	winners := sortIndices(overlaps)
 
-	n := int(sp.LocalAreaDensity * float64(sp.NumColumns))
+	n := int(sp.localAreaDensity * float64(sp.numColumns))
 	start := len(winners) - n
 
 	// Enforce Stimulus Threshold : useful for varying sparsity input
 	for start < len(winners) {
 		i := winners[start]
-		if overlaps[i] >= sp.StimulusThreshold {
+		if overlaps[i] >= sp.stimulusThreshold {
 			break
 		} else {
 			start++
 		}
 	}
 
-	for col, _ := range sp.Cols {
-		sp.Cols[col].Active = false
+	for col := range sp.cols {
+		sp.cols[col].active = false
 	}
 
 	winners = reverse(winners[start:]) // [start:]
 	for _, col := range winners {
-		sp.Cols[col].Active = true
+		sp.cols[col].active = true
 	}
 }
 
@@ -348,17 +349,17 @@ func (sp *SpatialPooler) inhibitColumnsGlobal(learn bool) {
 func (sp *SpatialPooler) inhibitColumnsLocal(learn bool) {
 }
 
-/* Update the Overlap score on all columns. The Overlap is the number of Connected synapses terminating in an active input bit. */
-func (sp *SpatialPooler) updateOverlaps() {
-	for i, _ := range sp.Cols {
-		sp.Cols[i].Overlap = 0
-		for _, syn := range sp.Cols[i].PSyns {
-			if syn.Connected && sp.input.Get(syn.Idx) {
-				sp.Cols[i].Overlap += 1
+/* Update the overlap score on all columns. The overlap is the number of connected synapses terminating in an active input bit. */
+func (sp *SpatialPooler) updateoverlaps() {
+	for i := range sp.cols {
+		sp.cols[i].overlap = 0
+		for _, syn := range sp.cols[i].psyns {
+			if syn.connected && sp.input.Get(syn.idx) {
+				sp.cols[i].overlap++
 			}
 		}
 
-		sp.Cols[i].BoostedOverlap = int(float64(sp.Cols[i].Overlap) *
-			sp.Cols[i].BoostFactor)
+		sp.cols[i].boostedOverlap = int(float64(sp.cols[i].overlap) *
+			sp.cols[i].boostFactor)
 	}
 }
