@@ -1,4 +1,4 @@
-package main
+package gohtm
 
 func main() {
 	r := NewRegion()

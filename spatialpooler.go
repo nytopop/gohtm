@@ -1,4 +1,4 @@
-package main
+package gohtm
 
 import (
 	"encoding/json"

@@ -1,4 +1,4 @@
-package main
+package gohtm
 
 /* Connections for Temporal Memory */
 

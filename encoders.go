@@ -1,4 +1,4 @@
-package main
+package gohtm
 
 import (
 	"math/rand"
