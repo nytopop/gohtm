@@ -10,40 +10,40 @@ import (
 
 // SpatialParams : Parameters for SpatialPooler initialization.
 type SpatialParams struct {
-	numColumns          int
-	numInputs           int
-	potentialRadius     int
-	potentialPct        float64
-	initConnPct         float64
-	synPermConnected    float64
-	globalInhibition    bool
-	localAreaDensity    float64
-	stimulusThreshold   int
-	synPermActiveMod    float64
-	synPermInactiveMod  float64
-	dutyCyclePeriod     int
-	minOverlapDutyCycle float64
-	minActiveDutyCycle  float64
-	maxBoost            float64
+	NumColumns          int
+	NumInputs           int
+	PotentialRadius     int
+	PotentialPct        float64
+	InitConnPct         float64
+	SynPermConnected    float64
+	GlobalInhibition    bool
+	LocalAreaDensity    float64
+	StimulusThreshold   int
+	SynPermActiveMod    float64
+	SynPermInactiveMod  float64
+	DutyCyclePeriod     int
+	MinOverlapDutyCycle float64
+	MinActiveDutyCycle  float64
+	MaxBoost            float64
 }
 
 func NewSpatialParams() SpatialParams {
 	return SpatialParams{
-		numColumns:          2048, // size of output vector
-		numInputs:           400,  // size of input vector
-		potentialRadius:     8,    // # of potential synapses
-		potentialPct:        0.5,  // % sample of potentials
-		initConnPct:         0.3,  // % synapses to connect on init
-		synPermConnected:    0.3,  // synapse connected threshold
-		globalInhibition:    true, // enable global inhibition
-		localAreaDensity:    0.02, // sparsity of output vector
-		stimulusThreshold:   0,    // used for variable sparsity inputs
-		synPermActiveMod:    0.05, // permanence increment
-		synPermInactiveMod:  0.03, // permanence decrement
-		dutyCyclePeriod:     8,    // duty cycle period, in cycles
-		minOverlapDutyCycle: 0.04, // used to bump weak columns
-		minActiveDutyCycle:  0.04, // used to boost weak columns
-		maxBoost:            8.0,  // maximum boost value
+		NumColumns:          2048, // size of output vector
+		NumInputs:           400,  // size of input vector
+		PotentialRadius:     8,    // # of potential synapses
+		PotentialPct:        0.5,  // % sample of potentials
+		InitConnPct:         0.3,  // % synapses to connect on init
+		SynPermConnected:    0.3,  // synapse connected threshold
+		GlobalInhibition:    true, // enable global inhibition
+		LocalAreaDensity:    0.02, // sparsity of output vector
+		StimulusThreshold:   0,    // used for variable sparsity inputs
+		SynPermActiveMod:    0.05, // permanence increment
+		SynPermInactiveMod:  0.03, // permanence decrement
+		DutyCyclePeriod:     8,    // duty cycle period, in cycles
+		MinOverlapDutyCycle: 0.04, // used to bump weak columns
+		MinActiveDutyCycle:  0.04, // used to boost weak columns
+		MaxBoost:            8.0,  // maximum boost value
 	}
 }
 
@@ -92,26 +92,26 @@ type SpatialPooler struct {
 /* Initialize a new SpatialPooler with supplied SpatialParams. */
 func NewSpatialPooler(p SpatialParams) SpatialPooler {
 	sp := SpatialPooler{
-		numColumns:          p.numColumns,
-		numInputs:           p.numInputs,
-		potentialRadius:     p.potentialRadius,
-		potentialPct:        p.potentialPct,
-		initConnPct:         p.initConnPct,
-		synPermConnected:    p.synPermConnected,
-		globalInhibition:    p.globalInhibition,
-		localAreaDensity:    p.localAreaDensity,
-		stimulusThreshold:   p.stimulusThreshold,
-		synPermActiveMod:    p.synPermActiveMod,
-		synPermInactiveMod:  p.synPermInactiveMod,
-		dutyCyclePeriod:     p.dutyCyclePeriod,
-		minOverlapDutyCycle: p.minOverlapDutyCycle,
-		minActiveDutyCycle:  p.minActiveDutyCycle,
-		maxBoost:            p.maxBoost,
+		numColumns:          p.NumColumns,
+		numInputs:           p.NumInputs,
+		potentialRadius:     p.PotentialRadius,
+		potentialPct:        p.PotentialPct,
+		initConnPct:         p.InitConnPct,
+		synPermConnected:    p.SynPermConnected,
+		globalInhibition:    p.GlobalInhibition,
+		localAreaDensity:    p.LocalAreaDensity,
+		stimulusThreshold:   p.StimulusThreshold,
+		synPermActiveMod:    p.SynPermActiveMod,
+		synPermInactiveMod:  p.SynPermInactiveMod,
+		dutyCyclePeriod:     p.DutyCyclePeriod,
+		minOverlapDutyCycle: p.MinOverlapDutyCycle,
+		minActiveDutyCycle:  p.MinActiveDutyCycle,
+		maxBoost:            p.MaxBoost,
 		iteration:           1,
 		learnIteration:      1,
 	}
 
-	sp.cols = make([]spColumn, p.numColumns)
+	sp.cols = make([]spColumn, p.NumColumns)
 
 	for i, _ := range sp.cols {
 		sp.mapPotential(i)
