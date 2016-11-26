@@ -4,6 +4,8 @@ import "fmt"
 
 /* Temporal Memory */
 
+// TemporalParams contains parameters for initialization of a
+// TemporalMemory region.
 type TemporalParams struct {
 	numColumns          int
 	numCells            int
@@ -15,6 +17,7 @@ type TemporalParams struct {
 	synPerSeg           int
 }
 
+// NewTemporalParams returns a default TemporalParams.
 func NewTemporalParams() TemporalParams {
 	return TemporalParams{
 		numColumns:          128,  // input space dimensions
@@ -56,6 +59,7 @@ type TMColumn []Cell
 // synapse should be two ptrs
 */
 
+// TemporalMemory is a sequence learning and prediction algorithm.
 type TemporalMemory struct {
 	// state
 	connections Connections
@@ -69,6 +73,8 @@ type TemporalMemory struct {
 	synPermConnected    float64
 }
 
+// NewTemporalMemory initializes a new TemporalMemory region with
+// the provided TemporalParams.
 func NewTemporalMemory(p TemporalParams) TemporalMemory {
 	tm := TemporalMemory{
 		numColumns:          p.numColumns,
@@ -103,6 +109,8 @@ func NewTemporalMemory(p TemporalParams) TemporalMemory {
 	return tm
 }
 
+// Compute iterates the TemporalMemory algorithm with the provided
+// vector of active columns from a SpatialPooler.
 func (tm *TemporalMemory) Compute(active SparseBinaryVector) SparseBinaryVector {
 	return SparseBinaryVector{}
 }

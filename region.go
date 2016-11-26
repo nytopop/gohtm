@@ -2,21 +2,22 @@ package gohtm
 
 import "fmt"
 
-/* Region Parameters */
+// RegionParams is a meta-struct containing parameters for a SpatialPooler
+// and a TemporalMemory instance.
 type RegionParams struct {
-	//ep EncoderParams
 	sp SpatialParams
 	tp TemporalParams
 }
 
-/* Result struct for a region's output. */
+// RegionResult contains the output of calling Compute on a Region.
 type RegionResult struct {
 	data    interface{}
 	encoded SparseBinaryVector
 	spatial SparseBinaryVector
 }
 
-/* Region. A type comprising an encoder, spatial pooler, and temporal memory segment. */
+// Region wraps an Encoder, SpatialPooler, and TemporalMemory instance
+// into one object for ease of use.
 type Region struct {
 	enc Encoder
 	sp  SpatialPooler
@@ -25,7 +26,7 @@ type Region struct {
 	iteration int
 }
 
-/* Create a new region with default parameters. */
+// NewRegion returns a new region.
 func NewRegion() Region {
 	return Region{
 		enc: NewRDScalarEncoder(400, 21, 1),
@@ -34,7 +35,8 @@ func NewRegion() Region {
 	}
 }
 
-/* Encode a datapoint, call compute on temporal memory and spatial pooler. */
+// Compute encodes a provided datapoint, calls Compute on the
+// SpatialPooler and TemporalMemory, and returns the result.
 func (r *Region) Compute(data interface{}, learn bool) RegionResult {
 	r.iteration++
 
@@ -54,6 +56,8 @@ func (r *Region) Compute(data interface{}, learn bool) RegionResult {
 	}
 }
 
+// PredictK recursively predicts k steps into the future. No learning
+// is performed.
 func (r *Region) PredictK(k int) {
 	for i := 0; i < k; i++ {
 		// call compute recursively

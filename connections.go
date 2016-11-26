@@ -2,12 +2,10 @@ package gohtm
 
 /* Connections for Temporal Memory */
 
-/* Synapse */
 type Synapse struct {
 	segment *Segment
 }
 
-/* Segment */
 type Segment struct {
 	cell     int
 	flatIdx  int
@@ -18,7 +16,6 @@ func NewSegment() Segment {
 	return Segment{}
 }
 
-/* Cell */
 type Cell struct {
 	segments []Segment
 }
@@ -29,7 +26,6 @@ func NewCell(seg int) Cell {
 	}
 }
 
-/* Connections */
 type Connections struct {
 	numCells   int
 	segPerCell int

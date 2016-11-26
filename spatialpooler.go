@@ -8,7 +8,7 @@ import (
 
 /* Spatial Pooler */
 
-// SpatialParams : Parameters for SpatialPooler initialization.
+// SpatialParams contains parameters for initialization of a SpatialPooler.
 type SpatialParams struct {
 	NumColumns          int
 	NumInputs           int
@@ -27,6 +27,7 @@ type SpatialParams struct {
 	MaxBoost            float64
 }
 
+// NewSpatialParams returns a SpatialParams with default parameters.
 func NewSpatialParams() SpatialParams {
 	return SpatialParams{
 		NumColumns:          2048, // size of output vector
@@ -63,6 +64,8 @@ type spColumn struct {
 	active           bool
 }
 
+// SpatialPooler is a learning algorithm that maps inputs to a sparse
+// distributed representation.
 type SpatialPooler struct {
 	// state
 	cols             []spColumn
@@ -89,7 +92,8 @@ type SpatialPooler struct {
 	maxBoost            float64
 }
 
-/* Initialize a new SpatialPooler with supplied SpatialParams. */
+// NewSpatialPooler initializes a new SpatialPooler with the provided
+// SpatialParams.
 func NewSpatialPooler(p SpatialParams) SpatialPooler {
 	sp := SpatialPooler{
 		numColumns:          p.NumColumns,
@@ -113,7 +117,7 @@ func NewSpatialPooler(p SpatialParams) SpatialPooler {
 
 	sp.cols = make([]spColumn, p.NumColumns)
 
-	for i, _ := range sp.cols {
+	for i := range sp.cols {
 		sp.mapPotential(i)
 		sp.initpermanence(i)
 		sp.updateconnected(i)
@@ -123,12 +127,15 @@ func NewSpatialPooler(p SpatialParams) SpatialPooler {
 	return sp
 }
 
+// Save writes a SpatialPooler to disk, allowing persistence of learning
+// states.
 func (sp SpatialPooler) Save(filename string) {
 	js, _ := json.Marshal(sp)
 	ioutil.WriteFile(filename, js, 0644)
 }
 
-/* Updates the connected value on specified column's synapses. This should be called every time a synapse is modified. */
+// Updates the connected value on specified column's synapses.
+// This should be called every time a synapse is modified.
 func (sp *SpatialPooler) updateconnected(col int) {
 	for i, j := range sp.cols[col].psyns {
 		if j.perm >= sp.synPermConnected {
@@ -140,11 +147,14 @@ func (sp *SpatialPooler) updateconnected(col int) {
 }
 
 // TODO : Clipping min/max values
-/* Initializes permanence of synapses on specified column. This method uses a normal distribution centering around the synPermConnected parameter, and intializes columns as connected based on the initConnPct parameter. */
+// Initializes permanence of synapses on specified column.
+// This method uses a normal distribution centering around the
+// synPermConnected parameter, and intializes columns as connected
+// based on the initConnPct parameter.
 func (sp *SpatialPooler) initpermanence(col int) {
 	sd := 0.05
 	var p float64
-	for i, _ := range sp.cols[col].psyns {
+	for i := range sp.cols[col].psyns {
 		chance := rand.Float64()
 		switch {
 		case chance <= sp.initConnPct:
@@ -163,7 +173,9 @@ func (sp *SpatialPooler) initpermanence(col int) {
 	}
 }
 
-/* Creates potential synapses on specified column. This method will randomly sample the receptive field of a column, and sets the potential synapses to the sampled indices. */
+// Creates potential synapses on specified column. This method will
+// randomly sample the receptive field of a column, and sets the
+// potential synapses to the sampled indices.
 func (sp *SpatialPooler) mapPotential(col int) {
 	ratio := float64(col) / float64(sp.numColumns)
 	center := int(float64(sp.numInputs) * ratio)
@@ -178,7 +190,8 @@ func (sp *SpatialPooler) mapPotential(col int) {
 	}
 }
 
-/* Returns neighborhood of specified input index. Uses wraparound by default. */
+// Returns neighborhood of specified input index. Uses wraparound
+// by default.
 func (sp *SpatialPooler) getInputNeighbors(center int) (nbs []int) {
 	r := sp.potentialRadius
 	for i := center - r; i <= center+r; i++ {
@@ -194,7 +207,9 @@ func (sp *SpatialPooler) getInputNeighbors(center int) (nbs []int) {
 	return
 }
 
-/* Compute active columns for a given input vector. */
+// Compute runs an input vector through the SpatialPooler algorithm,
+// and returns a vector containing the active columns. The learn
+// parameter specifies whether learning should be performed.
 func (sp *SpatialPooler) Compute(input SparseBinaryVector, learn bool) SparseBinaryVector {
 	if input.x != sp.numInputs {
 		panic("Mismatched input dimensions!")
@@ -229,7 +244,10 @@ func (sp *SpatialPooler) Compute(input SparseBinaryVector, learn bool) SparseBin
 	return active
 }
 
-/* Update boost factors for all columns. The boost factors are based on the activation duty cycle of each column; columns that activate infrequently are boosted higher, columns that are active enough of the time are left at 1.0 boost. */
+// Update boost factors for all columns. The boost factors are based
+// on the activation duty cycle of each column; columns that activate
+// infrequently are boosted higher, columns that are active enough of
+// the time are left at 1.0 boost.
 func (sp *SpatialPooler) updateboostFactors() {
 	for i, col := range sp.cols {
 		if col.activeDutyCycle < sp.minActiveDutyCycle {
@@ -240,11 +258,11 @@ func (sp *SpatialPooler) updateboostFactors() {
 	}
 }
 
-/* Increase permanence values for all synapses on weak columns. */
+// Increase permanence values for all synapses on weak columns.
 func (sp *SpatialPooler) bumpWeakColumns() {
 	for i, col := range sp.cols {
 		if col.overlapDutyCycle < sp.minOverlapDutyCycle {
-			for j, _ := range col.psyns {
+			for j := range col.psyns {
 				sp.cols[i].psyns[j].perm += sp.synPermActiveMod
 			}
 			sp.updateconnected(i)
@@ -252,7 +270,7 @@ func (sp *SpatialPooler) bumpWeakColumns() {
 	}
 }
 
-/**/
+// Update the operlap duty cycles of each column.
 func (sp *SpatialPooler) updateoverlapDutyCycles() {
 	period := sp.dutyCyclePeriod
 	if period > sp.iteration {
@@ -272,7 +290,7 @@ func (sp *SpatialPooler) updateoverlapDutyCycles() {
 	}
 }
 
-/**/
+// Update the active duty cycles of each column.
 func (sp *SpatialPooler) updateactiveDutyCycles() {
 	period := sp.dutyCyclePeriod
 	if period > sp.iteration {
@@ -292,7 +310,10 @@ func (sp *SpatialPooler) updateactiveDutyCycles() {
 	}
 }
 
-/* Adapt permanence values of synapses based on the input vector and currently active columns post-inhibition. permanences for synapses connected to active inputs are increased, and those connected to inactive inputs are decreased. */
+// Adapt permanence values of synapses based on the input vector and
+// currently active columns post-inhibition. Permanences for synapses
+// connected to active inputs are increased, and those connected to
+// inactive inputs are decreased.
 func (sp *SpatialPooler) adaptSynapses() {
 	for i, col := range sp.cols {
 		if col.active {
@@ -308,7 +329,8 @@ func (sp *SpatialPooler) adaptSynapses() {
 	}
 }
 
-/* Inhibit columns globally. This method sets the active state on each column. */
+// Inhibit columns globally. This method sets the active state on
+// each column.
 func (sp *SpatialPooler) inhibitColumnsGlobal(learn bool) {
 	overlaps := make([]int, sp.numColumns)
 	if learn {
@@ -345,11 +367,13 @@ func (sp *SpatialPooler) inhibitColumnsGlobal(learn bool) {
 	}
 }
 
-/* Inhibit columns locally. This method sets the active state on each column. */
+// Inhibit columns locally. This method sets the active state on
+// each column.
 func (sp *SpatialPooler) inhibitColumnsLocal(learn bool) {
 }
 
-/* Update the overlap score on all columns. The overlap is the number of connected synapses terminating in an active input bit. */
+// Update the overlap score on all columns. The overlap is the
+// number of connected synapses terminating in an active input bit.
 func (sp *SpatialPooler) updateoverlaps() {
 	for i := range sp.cols {
 		sp.cols[i].overlap = 0

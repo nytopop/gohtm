@@ -13,13 +13,18 @@ import (
 4. The output should have similar sparsity for all inputs and have enough one-bits to handle noise and subsampling.
 */
 
-// All encoders should implement this interface
+// Encoder is an interface for all sparse encoders. A valid Encoder
+// should implement a Decode and an Encode method, persistent
+// state is not required.
 type Encoder interface {
 	Encode(interface{}) SparseBinaryVector
 	Decode(SparseBinaryVector) interface{}
 }
 
-// Random Distributed Scalar Encoder
+// RDScalarEncoder is an implementation of a random distributed scalar
+// encoder. Scalar values are mapped to buckets, which are randomly
+// assigned to groups of bits in the output space. Requires persistent
+// state.
 type RDScalarEncoder struct {
 	n       int
 	w       int
@@ -27,7 +32,11 @@ type RDScalarEncoder struct {
 	buckets map[int][]int
 }
 
-// Return a new encoder
+// NewRDScalarEncoder returns a new RDScalarEncoder with the supplied
+// parameters. n denotes the size of the output vector, w denotes how
+// many bits should be active for an encoded scalar value. r denotes
+// the resolution of the encoder; setting r to 1 will produce a bucket
+// for every interval of 1 in the input space.
 func NewRDScalarEncoder(n, w int, r float64) *RDScalarEncoder {
 	return &RDScalarEncoder{
 		n:       n,
@@ -37,10 +46,12 @@ func NewRDScalarEncoder(n, w int, r float64) *RDScalarEncoder {
 	}
 }
 
+// Encode encodes a scalar value and returns a SparseBinaryVector.
+// The provided scalar value must be float64.
 func (rdse *RDScalarEncoder) Encode(s interface{}) SparseBinaryVector {
 	b := int(s.(float64) / rdse.r)
 	if _, ok := rdse.buckets[b]; !ok {
-		rdse.NewBucket(b)
+		rdse.newBucket(b)
 	}
 
 	sv := NewSparseBinaryVector(rdse.n)
@@ -51,7 +62,7 @@ func (rdse *RDScalarEncoder) Encode(s interface{}) SparseBinaryVector {
 	return sv
 }
 
-func (rdse *RDScalarEncoder) NewBucket(b int) {
+func (rdse *RDScalarEncoder) newBucket(b int) {
 	for i := 0; i <= b; i++ {
 		if _, ok := rdse.buckets[i]; !ok {
 			rdse.buckets[i] = jank(i, rdse.n, rdse.w)
@@ -60,6 +71,8 @@ func (rdse *RDScalarEncoder) NewBucket(b int) {
 	}
 }
 
+// Decode decodes the provided SparseBinaryVector back into a scalar
+// value. If decoding fails, 0.0 is returned.
 func (rdse *RDScalarEncoder) Decode(s SparseBinaryVector) interface{} {
 	for k, v := range rdse.buckets {
 		if reflect.DeepEqual(v, s.x) {

@@ -2,8 +2,9 @@ package gohtm
 
 // SDR Utility Functions
 
-/* Compute the union of input vectors. Returns a SparseBinaryVector comprising all active bits in inputs. */
-func VectorUnion(input ...SparseBinaryVector) SparseBinaryVector {
+// Compute the union of input vectors.
+// Returns a SparseBinaryVector comprising all active bits in inputs.
+func vectorUnion(input ...SparseBinaryVector) SparseBinaryVector {
 	for _, root := range input {
 		for _, cmp := range input {
 			if root.x != cmp.x {
@@ -105,12 +106,15 @@ func (sbm *SparseBinaryMatrix) Del(x, y int) {
 }
 */
 
-// Sparse Binary Vector : map backing
+// SparseBinaryVector is a sparsely allocated binary vector type,
+// storing only active bits.
 type SparseBinaryVector struct {
 	x int
 	d map[int]bool
 }
 
+// NewSparseBinaryVector allocates returns new SparseBinaryVector,
+// allocated to a maximum length of x.
 func NewSparseBinaryVector(x int) SparseBinaryVector {
 	return SparseBinaryVector{
 		x: x,
@@ -118,6 +122,9 @@ func NewSparseBinaryVector(x int) SparseBinaryVector {
 	}
 }
 
+// Set sets the value of position x in the vector to v. If v is true,
+// the value is encoded, if v is false the value will be deleted to
+// maintain sparsity.
 func (sbv *SparseBinaryVector) Set(x int, v bool) {
 	if v {
 		sbv.d[x] = true
@@ -126,26 +133,32 @@ func (sbv *SparseBinaryVector) Set(x int, v bool) {
 	}
 }
 
+// Get returns the value of position x in the vector.
 func (sbv *SparseBinaryVector) Get(x int) bool {
 	return sbv.d[x]
 }
 
+// Del deletes the entry at x from the vector.
 func (sbv *SparseBinaryVector) Del(x int) {
 	delete(sbv.d, x)
 }
 
+// Sparsity returns the sparsity of the vector, as computed by
+// (activebits / length).
 func (sbv *SparseBinaryVector) Sparsity() float64 {
 	return float64(len(sbv.d)) / float64(sbv.x)
 }
 
+// Dense converts and returns the vector as a dense []bool representation.
 func (sbv *SparseBinaryVector) Dense() []bool {
 	dv := make([]bool, sbv.x)
-	for i, _ := range dv {
+	for i := range dv {
 		dv[i] = sbv.Get(i)
 	}
 	return dv
 }
 
+// Pretty returns a stringified representation of the vector.
 func (sbv *SparseBinaryVector) Pretty() string {
 	out := ""
 	for i := 0; i < sbv.x; i++ {
