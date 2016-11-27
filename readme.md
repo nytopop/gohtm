@@ -4,3 +4,13 @@
 An implementation of the HTM algorithm.
 
 In progress.
+
+## Roadmap
+
+- [x] Encoder Base
+- [ ] Scalar Encoder
+- [x] Random Distributed Scalar Encoder
+- [x] Spatial Pooler
+- [ ] Temporal Memory
+- [ ] Temporal Pooler
+- [ ] Classifier
