@@ -21,13 +21,30 @@ type Encoder interface {
 	Decode(SparseBinaryVector) interface{}
 }
 
+// TODO - write encoder
+// ScalarEncoder is a linearly derived scalar encoder.
+type ScalarEncoder struct {
+	n int
+}
+
+func NewScalarEncoder(n int) *ScalarEncoder {
+	return &ScalarEncoder{
+		n: n,
+	}
+}
+func (s *ScalarEncoder) Encode(d interface{}) SparseBinaryVector {
+	return NewSparseBinaryVector(s.n)
+}
+func (s *ScalarEncoder) Decode(sv SparseBinaryVector) interface{} {
+	return 42.0
+}
+
 // RDScalarEncoder is an implementation of a random distributed scalar
 // encoder. Scalar values are mapped to buckets, which are randomly
 // assigned to groups of bits in the output space. Requires persistent
 // state.
 type RDScalarEncoder struct {
-	n       int
-	w       int
+	n, w    int
 	r       float64
 	buckets map[int][]int
 }
