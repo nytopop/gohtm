@@ -20,7 +20,7 @@ type TemporalParams struct {
 // NewTemporalParams returns a default TemporalParams.
 func NewTemporalParams() TemporalParams {
 	return TemporalParams{
-		NumColumns:          128,
+		NumColumns:          16,
 		NumCells:            4,
 		ActivationThreshold: 12,
 		MinThreshold:        10,
@@ -34,7 +34,7 @@ func NewTemporalParams() TemporalParams {
 // TemporalMemory is a sequence learning and prediction algorithm.
 type TemporalMemory struct {
 	// state
-	cons Connections
+	cons *Connections
 
 	// params
 	numColumns          int
@@ -65,6 +65,12 @@ func NewTemporalMemory(p TemporalParams) TemporalMemory {
 	fmt.Println(totalCells, "total cells")
 	tm.cons = NewConnections(totalCells, tm.segPerCell, tm.synPerSeg)
 	fmt.Println(tm.cons)
+
+	// testing connections
+	s := tm.cons.SegmentsForCell(4)
+	for _, seg := range s {
+		fmt.Println(tm.cons.SynapsesForSegment(seg))
+	}
 
 	/*
 		tm.cols = make([]TMColumn, p.numColumns)
