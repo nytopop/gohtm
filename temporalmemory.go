@@ -26,8 +26,8 @@ func NewTemporalParams() TemporalParams {
 		MinThreshold:        10,
 		InitPermanence:      0.21,
 		SynPermConnected:    0.5,
-		SegPerCell:          64,
-		SynPerSeg:           64,
+		SegPerCell:          16,
+		SynPerSeg:           16,
 	}
 }
 
@@ -62,15 +62,25 @@ func NewTemporalMemory(p TemporalParams) TemporalMemory {
 	}
 
 	totalCells := tm.numColumns * tm.numCells
-	fmt.Println(totalCells, "total cells")
 	tm.cons = NewConnections(totalCells, tm.segPerCell, tm.synPerSeg)
+
+	// testing connections:segment
+	fmt.Println(totalCells, "total cells")
 	fmt.Println(tm.cons)
 
-	// testing connections
+	for i := 0; i < 256; i++ {
+		tm.cons.CreateSegment(4)
+	}
+
 	s := tm.cons.SegmentsForCell(4)
 	for _, seg := range s {
-		fmt.Println(tm.cons.SynapsesForSegment(seg))
+		fmt.Println(seg)
 	}
+
+	fmt.Println("Segments:", tm.cons.numSegments)
+	fmt.Println("Synapses:", tm.cons.numSynapses)
+
+	// testing connections:synapse
 
 	/*
 		tm.cols = make([]TMColumn, p.numColumns)

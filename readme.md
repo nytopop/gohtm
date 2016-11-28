@@ -14,3 +14,4 @@ In progress.
 - [ ] Temporal Memory
 - [ ] Temporal Pooler
 - [ ] Classifier
+- [ ] Tests
