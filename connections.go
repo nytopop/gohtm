@@ -9,7 +9,17 @@ type Synapse struct {
 	segment         *Segment
 	preSynapticCell int
 	ordinal         int
-	permanence      float64
+	perm            float64
+}
+
+// NewSynapse creates a new synapse.
+func NewSynapse(seg *Segment, pre int, perm float64, ord int) Synapse {
+	return Synapse{
+		segment:         seg,
+		preSynapticCell: pre,
+		ordinal:         ord,
+		perm:            perm,
+	}
 }
 
 // Segment contains information about a unique segment.
@@ -53,6 +63,7 @@ type Connections struct {
 	numSynapses    int
 	nextFlatIdx    int
 	nextSegOrdinal int
+	nextSynOrdinal int
 	iteration      int
 	cells          []*Cell
 }
@@ -66,11 +77,12 @@ func NewConnections(cell, seg, syn int) *Connections {
 		numSynapses:    0,
 		nextFlatIdx:    0,
 		nextSegOrdinal: 0,
+		nextSynOrdinal: 0,
 		iteration:      0,
+		cells:          make([]*Cell, cell),
 	}
 
-	c.cells = make([]*Cell, c.numCells)
-	for i := 0; i < c.numCells; i++ {
+	for i := range c.cells {
 		c.cells[i] = NewCell()
 	}
 
@@ -94,10 +106,11 @@ func (c *Connections) GetSegment(cell, idx int) *Segment {
 	return c.cells[cell].segments[idx]
 }
 
-// LeastRecentSeg
-func (c *Connections) LeastRecentSegment(cell int) *Segment {
+// leastRecentSeg returns the *Segment that was updated
+// the longest time ago.
+func (c *Connections) leastRecentSegment(cell int) *Segment {
 	var min *Segment
-	var minIter int = math.MaxInt64
+	var minIter = math.MaxInt64
 	for _, seg := range c.SegmentsForCell(cell) {
 		if seg.lastIter < minIter {
 			min = seg
@@ -107,7 +120,20 @@ func (c *Connections) LeastRecentSegment(cell int) *Segment {
 	return min
 }
 
-// minPermSynapse
+// minPermSynapse returns the Synapse with smallest permanence
+// on provided *Segment.
+func (c *Connections) minPermSynapse(seg *Segment) Synapse {
+	var min Synapse
+	var minPerm = 500.0
+	for syn := range seg.synapses {
+		if syn.perm < minPerm {
+			min = syn
+			minPerm = syn.perm
+		}
+	}
+	return min
+}
+
 // segForFlatIdx
 // lenFlatList
 // synsForPresynapticCell
@@ -115,7 +141,7 @@ func (c *Connections) LeastRecentSegment(cell int) *Segment {
 // CreateSegment creates a segment on the provided cell index.
 func (c *Connections) CreateSegment(cellIdx int) *Segment {
 	for len(c.SegmentsForCell(cellIdx)) >= c.segPerCell {
-		c.DestroySegment(c.LeastRecentSegment(cellIdx))
+		c.DestroySegment(c.leastRecentSegment(cellIdx))
 	}
 
 	flatIdx := c.nextFlatIdx
@@ -150,17 +176,25 @@ func (c *Connections) DestroySegment(seg *Segment) {
 }
 
 // CreateSynapse creates a new synapse on a segment.
-//
-// seg : *Segment on which to create synapse.
-//
-// pre : presynaptic cell from which to connect.
-//
-// perm: initial permanence value
+// Params: seg is the segment on which to create the synapse, pre
+// is the presynaptic cell to connect to, perm is permanence.
 func (c *Connections) CreateSynapse(seg *Segment, pre int, perm float64) {
+	for len(c.SynapsesForSegment(seg)) >= c.synPerSeg {
+		c.DestroySynapse(c.minPermSynapse(seg))
+	}
+
+	syn := NewSynapse(seg, pre, perm, c.nextSynOrdinal)
+	c.nextSynOrdinal++
+
+	seg.synapses[syn] = true
+
+	c.updateCounts()
 }
 
-// deleteSynapse
-func (c *Connections) DestroySynapse() {
+// DestroySynapse removes the provided synapse from a segment.
+func (c *Connections) DestroySynapse(syn Synapse) {
+	delete(syn.segment.synapses, syn)
+	c.updateCounts()
 }
 
 // updateCounts updates the numSegments and numSynapses counters
@@ -177,4 +211,13 @@ func (c *Connections) updateCounts() {
 	}
 	c.numSegments = sumSegs
 	c.numSynapses = sumSyns
+}
+
+// updateSynPerm updates the permanence value of a provided synapse
+func (c *Connections) updateSynPerm(syn Synapse, perm float64) {
+	new := syn
+	new.perm = perm
+
+	delete(syn.segment.synapses, syn)
+	new.segment.synapses[new] = true
 }

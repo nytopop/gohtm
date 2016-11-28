@@ -82,22 +82,6 @@ func NewTemporalMemory(p TemporalParams) TemporalMemory {
 
 	// testing connections:synapse
 
-	/*
-		tm.cols = make([]TMColumn, p.numColumns)
-		for i, _ := range tm.cols {
-			// i is column index
-			tm.cols[i] = make(TMColumn, p.numCells)
-
-			for j, _ := range tm.cols[i] {
-				// j is cell index
-
-				tm.cols[i][j].seg = Segment{
-					dsyns: make([]DistalSynapse, 128),
-				}
-			}
-		}
-	*/
-
 	return tm
 }
 
