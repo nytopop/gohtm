@@ -7,9 +7,10 @@ import "math"
 // Synapse contains information about a unique synapse.
 type Synapse struct {
 	segment         *Segment
-	preSynapticCell int
+	preSynapticCell int // should be a *Cell
 	ordinal         int
 	perm            float64
+	modPerm         float64 // temporary permanence modification
 }
 
 // NewSynapse creates a new synapse.
@@ -29,6 +30,7 @@ type Segment struct {
 	lastIter int
 	ordinal  int
 	synapses map[Synapse]bool
+	state    bool // false inactive, true active
 }
 
 // NewSegment returns a new blank Segment with the supplied parameters.
@@ -45,16 +47,19 @@ func NewSegment(cell, flatIdx, lastIter, ordinal int) *Segment {
 // Cell contains a number of connection points to other Cells.
 type Cell struct {
 	segments []*Segment
+	state    int // 0 inactive; 1 predicted; 2 active
 }
 
 func NewCell() *Cell {
 	return &Cell{
 		segments: []*Segment{},
+		state:    0,
 	}
 }
 
 // Connections stores the connectivity of a TemporalMemory region.
 type Connections struct {
+	numColumns int
 	numCells   int
 	segPerCell int
 	synPerSeg  int
@@ -68,18 +73,20 @@ type Connections struct {
 	cells          []*Cell
 }
 
-func NewConnections(cell, seg, syn int) *Connections {
+// NewConnections returns a new Connections.
+func NewConnections(numColumns, numCells, segPerCell, synPerSeg int) *Connections {
 	c := Connections{
-		numCells:       cell,
-		segPerCell:     seg,
-		synPerSeg:      syn,
+		numColumns:     numColumns,
+		numCells:       numCells,
+		segPerCell:     segPerCell,
+		synPerSeg:      synPerSeg,
 		numSegments:    0,
 		numSynapses:    0,
 		nextFlatIdx:    0,
 		nextSegOrdinal: 0,
 		nextSynOrdinal: 0,
 		iteration:      0,
-		cells:          make([]*Cell, cell),
+		cells:          make([]*Cell, numColumns*numCells),
 	}
 
 	for i := range c.cells {
@@ -87,6 +94,34 @@ func NewConnections(cell, seg, syn int) *Connections {
 	}
 
 	return &c
+}
+
+// PredictedForCol returns any depolarized cells in a column.
+func (c *Connections) PredictedForCol(col int) []*Cell {
+	pre := []*Cell{}
+
+	for _, cell := range c.CellsForCol(col) {
+		if cell.state == 1 {
+			pre = append(pre, cell)
+		}
+	}
+
+	return pre
+}
+
+// CellsForCol returns []*Cell for the provided column index.
+func (c *Connections) CellsForCol(col int) []*Cell {
+	cells := make([]*Cell, c.numCells)
+
+	var idx, min, max int
+	min = col * c.numCells
+	max = min + c.numCells
+	for i := min; i < max; i++ {
+		cells[idx] = c.cells[i]
+		idx++
+	}
+
+	return cells
 }
 
 // SegmentsForCell returns segments that belong to the provided cell idx.
@@ -217,6 +252,14 @@ func (c *Connections) updateCounts() {
 func (c *Connections) updateSynPerm(syn Synapse, perm float64) {
 	new := syn
 	new.perm = perm
+
+	delete(syn.segment.synapses, syn)
+	new.segment.synapses[new] = true
+}
+
+func (c *Connections) tempUpdateSynPerm(syn Synapse, mod float64) {
+	new := syn
+	new.modPerm = syn.modPerm + mod
 
 	delete(syn.segment.synapses, syn)
 	new.segment.synapses[new] = true

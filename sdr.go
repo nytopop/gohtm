@@ -149,6 +149,24 @@ func (sbv *SparseBinaryVector) Sparsity() float64 {
 	return float64(len(sbv.d)) / float64(sbv.x)
 }
 
+// Subsample returns w random bits from the SBV.
+func (sbv *SparseBinaryVector) Subsample(w int) SparseBinaryVector {
+	sl := make([]int, len(sbv.d))
+	var i int
+	for k := range sbv.d {
+		sl[i] = k
+		i++
+	}
+
+	vec := NewSparseBinaryVector(sbv.x)
+	sub := uniqueRandInts(w, len(sl))
+	for _, v := range sub {
+		vec.Set(sl[v], true)
+	}
+
+	return vec
+}
+
 // Dense converts and returns the vector as a dense []bool representation.
 func (sbv *SparseBinaryVector) Dense() []bool {
 	dv := make([]bool, sbv.x)

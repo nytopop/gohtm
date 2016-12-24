@@ -11,9 +11,10 @@ type RegionParams struct {
 
 // RegionResult contains the output of calling Compute on a Region.
 type RegionResult struct {
-	data    interface{}
-	encoded SparseBinaryVector
-	spatial SparseBinaryVector
+	data     interface{}
+	encoded  SparseBinaryVector
+	spatial  SparseBinaryVector
+	temporal SparseBinaryVector
 }
 
 // Region wraps an Encoder, SpatialPooler, and TemporalMemory instance
@@ -43,9 +44,18 @@ func (r *Region) Compute(data interface{}, learn bool) RegionResult {
 	// encode input and prettyprint
 	sv := r.enc.Encode(data)
 	rv := r.sp.Compute(sv, learn)
+	tv := r.tm.Compute(rv, learn)
+
+	// Encoder
 	fmt.Println("Data:", data)
-	fmt.Println("Sparsity:", rv.Sparsity())
+
+	// Spatial Pooling
+	fmt.Println("SP Sparsity:", rv.Sparsity())
 	fmt.Println(rv.Pretty())
+
+	// Temporal Memory
+	fmt.Println("TM Sparsity:", tv.Sparsity())
+	fmt.Println(tv.Pretty())
 
 	//r.sp.Save("sp.json")
 
@@ -53,6 +63,7 @@ func (r *Region) Compute(data interface{}, learn bool) RegionResult {
 		data:    data,
 		encoded: sv,
 		spatial: rv,
+		//	temporal: tv,
 	}
 }
 
