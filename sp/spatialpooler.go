@@ -1,9 +1,11 @@
-package gohtm
+package sp
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"math/rand"
+
+	"github.com/nytopop/gohtm/vec"
 )
 
 /* Spatial Pooler */
@@ -69,7 +71,7 @@ type spColumn struct {
 type SpatialPooler struct {
 	// state
 	cols             []spColumn
-	input            SparseBinaryVector
+	input            vec.SparseBinaryVector
 	inhibitionRadius int
 	iteration        int
 	learnIteration   int
@@ -182,7 +184,7 @@ func (sp *SpatialPooler) mapPotential(col int) {
 
 	nbs := sp.getInputNeighbors(center)
 	n := int(float64(len(nbs)) * sp.potentialPct)
-	sample := uniqueRandInts(n, len(nbs))
+	sample := vec.UniqueRandInts(n, len(nbs))
 
 	sp.cols[col].psyns = make([]proximalSynapse, len(sample))
 	for i, j := range sample {
@@ -210,8 +212,8 @@ func (sp *SpatialPooler) getInputNeighbors(center int) (nbs []int) {
 // Compute runs an input vector through the SpatialPooler algorithm,
 // and returns a vector containing the active columns. The learn
 // parameter specifies whether learning should be performed.
-func (sp *SpatialPooler) Compute(input SparseBinaryVector, learn bool) SparseBinaryVector {
-	if input.x != sp.numInputs {
+func (sp *SpatialPooler) Compute(input vec.SparseBinaryVector, learn bool) vec.SparseBinaryVector {
+	if input.X != sp.numInputs {
 		panic("Mismatched input dimensions!")
 	}
 	sp.input = input
@@ -237,7 +239,7 @@ func (sp *SpatialPooler) Compute(input SparseBinaryVector, learn bool) SparseBin
 	}
 
 	// return active columns
-	active := NewSparseBinaryVector(sp.numColumns)
+	active := vec.NewSparseBinaryVector(sp.numColumns)
 	for i, col := range sp.cols {
 		active.Set(i, col.active)
 	}
@@ -342,7 +344,7 @@ func (sp *SpatialPooler) inhibitColumnsGlobal(learn bool) {
 			overlaps[i] = col.overlap
 		}
 	}
-	winners := sortIndices(overlaps)
+	winners := vec.SortIndices(overlaps)
 
 	n := int(sp.localAreaDensity * float64(sp.numColumns))
 	start := len(winners) - n
@@ -361,7 +363,7 @@ func (sp *SpatialPooler) inhibitColumnsGlobal(learn bool) {
 		sp.cols[col].active = false
 	}
 
-	winners = reverse(winners[start:]) // [start:]
+	winners = vec.Reverse(winners[start:]) // [start:]
 	for _, col := range winners {
 		sp.cols[col].active = true
 	}

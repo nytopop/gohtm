@@ -3,6 +3,3 @@ sudo: false
 
 go:
   - 1.7
-
-install:
-  - go get -d -v . && go build -v .

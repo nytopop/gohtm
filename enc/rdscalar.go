@@ -1,43 +1,12 @@
-package gohtm
+package enc
 
 import (
 	"math/rand"
 	"reflect"
 	"sort"
+
+	"github.com/nytopop/gohtm/vec"
 )
-
-/* Encoder Design Guidelines
-1. Semantically similar data should result in SDRs with overlapping active bits.
-2. The same input should always produce the same SDR as output.
-3. The output should have the same dimensionality (total number of bits) for all inputs.
-4. The output should have similar sparsity for all inputs and have enough one-bits to handle noise and subsampling.
-*/
-
-// Encoder is an interface for all sparse encoders. A valid Encoder
-// should implement a Decode and an Encode method, persistent
-// state is not required.
-type Encoder interface {
-	Encode(interface{}) SparseBinaryVector
-	Decode(SparseBinaryVector) interface{}
-}
-
-// TODO - write encoder
-// ScalarEncoder is a linearly derived scalar encoder.
-type ScalarEncoder struct {
-	n int
-}
-
-func NewScalarEncoder(n int) *ScalarEncoder {
-	return &ScalarEncoder{
-		n: n,
-	}
-}
-func (s *ScalarEncoder) Encode(d interface{}) SparseBinaryVector {
-	return NewSparseBinaryVector(s.n)
-}
-func (s *ScalarEncoder) Decode(sv SparseBinaryVector) interface{} {
-	return 42.0
-}
 
 // RDScalarEncoder is an implementation of a random distributed scalar
 // encoder. Scalar values are mapped to buckets, which are randomly
@@ -65,13 +34,13 @@ func NewRDScalarEncoder(n, w int, r float64) *RDScalarEncoder {
 
 // Encode encodes a scalar value and returns a SparseBinaryVector.
 // The provided scalar value must be float64.
-func (rdse *RDScalarEncoder) Encode(s interface{}) SparseBinaryVector {
+func (rdse *RDScalarEncoder) Encode(s interface{}) vec.SparseBinaryVector {
 	b := int(s.(float64) / rdse.r)
 	if _, ok := rdse.buckets[b]; !ok {
 		rdse.newBucket(b)
 	}
 
-	sv := NewSparseBinaryVector(rdse.n)
+	sv := vec.NewSparseBinaryVector(rdse.n)
 	for _, v := range rdse.buckets[b] {
 		sv.Set(v, true)
 	}
@@ -90,9 +59,9 @@ func (rdse *RDScalarEncoder) newBucket(b int) {
 
 // Decode decodes the provided SparseBinaryVector back into a scalar
 // value. If decoding fails, 0.0 is returned.
-func (rdse *RDScalarEncoder) Decode(s SparseBinaryVector) interface{} {
+func (rdse *RDScalarEncoder) Decode(s vec.SparseBinaryVector) interface{} {
 	for k, v := range rdse.buckets {
-		if reflect.DeepEqual(v, s.x) {
+		if reflect.DeepEqual(v, s.X) {
 			return float64(k) * rdse.r
 		}
 	}
@@ -108,7 +77,7 @@ func jank(n, max, w int) []int {
 
 		for i := 0; i < w; i++ {
 			t := fakeHash(n+i, max, seed)
-			if !containsInt(t, out) {
+			if !vec.ContainsInt(t, out) {
 				out = append(out, t)
 			}
 		}

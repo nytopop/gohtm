@@ -1,22 +1,22 @@
-package gohtm
+package vec
 
 // SDR Utility Functions
 
 // Compute the union of input vectors.
 // Returns a SparseBinaryVector comprising all active bits in inputs.
-func vectorUnion(input ...SparseBinaryVector) SparseBinaryVector {
+func VectorUnion(input ...SparseBinaryVector) SparseBinaryVector {
 	for _, root := range input {
 		for _, cmp := range input {
-			if root.x != cmp.x {
+			if root.X != cmp.X {
 				panic("Mismatched vector lengths in VectorUnion()!")
 			}
 		}
 	}
 
-	out := NewSparseBinaryVector(input[0].x)
+	out := NewSparseBinaryVector(input[0].X)
 
 	var bit bool
-	for i := 0; i < input[0].x; i++ {
+	for i := 0; i < input[0].X; i++ {
 		bit = true
 		for _, sbv := range input {
 			bit = sbv.Get(i) && bit
@@ -109,7 +109,7 @@ func (sbm *SparseBinaryMatrix) Del(x, y int) {
 // SparseBinaryVector is a sparsely allocated binary vector type,
 // storing only active bits.
 type SparseBinaryVector struct {
-	x int
+	X int
 	d map[int]bool
 }
 
@@ -117,7 +117,7 @@ type SparseBinaryVector struct {
 // allocated to a maximum length of x.
 func NewSparseBinaryVector(x int) SparseBinaryVector {
 	return SparseBinaryVector{
-		x: x,
+		X: x,
 		d: map[int]bool{},
 	}
 }
@@ -146,7 +146,7 @@ func (sbv *SparseBinaryVector) Del(x int) {
 // Sparsity returns the sparsity of the vector, as computed by
 // (activebits / length).
 func (sbv *SparseBinaryVector) Sparsity() float64 {
-	return float64(len(sbv.d)) / float64(sbv.x)
+	return float64(len(sbv.d)) / float64(sbv.X)
 }
 
 // Subsample returns w random bits from the SBV.
@@ -158,8 +158,8 @@ func (sbv *SparseBinaryVector) Subsample(w int) SparseBinaryVector {
 		i++
 	}
 
-	vec := NewSparseBinaryVector(sbv.x)
-	sub := uniqueRandInts(w, len(sl))
+	vec := NewSparseBinaryVector(sbv.X)
+	sub := UniqueRandInts(w, len(sl))
 	for _, v := range sub {
 		vec.Set(sl[v], true)
 	}
@@ -169,7 +169,7 @@ func (sbv *SparseBinaryVector) Subsample(w int) SparseBinaryVector {
 
 // Dense converts and returns the vector as a dense []bool representation.
 func (sbv *SparseBinaryVector) Dense() []bool {
-	dv := make([]bool, sbv.x)
+	dv := make([]bool, sbv.X)
 	for i := range dv {
 		dv[i] = sbv.Get(i)
 	}
@@ -179,7 +179,7 @@ func (sbv *SparseBinaryVector) Dense() []bool {
 // Pretty returns a stringified representation of the vector.
 func (sbv *SparseBinaryVector) Pretty() string {
 	out := ""
-	for i := 0; i < sbv.x; i++ {
+	for i := 0; i < sbv.X; i++ {
 		if sbv.Get(i) {
 			out += "1"
 		} else {

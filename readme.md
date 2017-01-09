@@ -5,6 +5,26 @@ An implementation of the HTM algorithm.
 
 In progress.
 
+## Overview
+
+enc
+  Encode
+  Decode
+
+tm
+  Compute
+  Reset
+
+sp
+  Compute
+
+cells
+  
+region
+  Compute
+  Link
+  Unlink
+
 ## Roadmap
 
 - [x] Encoder Base

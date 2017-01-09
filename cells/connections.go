@@ -1,4 +1,4 @@
-package gohtm
+package cells
 
 import "math"
 

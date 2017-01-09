@@ -1,28 +1,35 @@
-package gohtm
+package region
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/nytopop/gohtm/enc"
+	"github.com/nytopop/gohtm/sp"
+	"github.com/nytopop/gohtm/tm"
+	"github.com/nytopop/gohtm/vec"
+)
 
 // RegionParams is a meta-struct containing parameters for a SpatialPooler
 // and a TemporalMemory instance.
 type RegionParams struct {
-	sp SpatialParams
-	tp TemporalParams
+	sp sp.SpatialParams
+	tp tm.TemporalParams
 }
 
 // RegionResult contains the output of calling Compute on a Region.
 type RegionResult struct {
 	data     interface{}
-	encoded  SparseBinaryVector
-	spatial  SparseBinaryVector
-	temporal SparseBinaryVector
+	encoded  vec.SparseBinaryVector
+	spatial  vec.SparseBinaryVector
+	temporal vec.SparseBinaryVector
 }
 
 // Region wraps an Encoder, SpatialPooler, and TemporalMemory instance
 // into one object for ease of use.
 type Region struct {
-	enc Encoder
-	sp  SpatialPooler
-	tm  TemporalMemory
+	enc enc.Encoder
+	sp  sp.SpatialPooler
+	tm  tm.TemporalMemory
 
 	iteration int
 }
@@ -30,9 +37,9 @@ type Region struct {
 // NewRegion returns a new region.
 func NewRegion() Region {
 	return Region{
-		enc: NewRDScalarEncoder(400, 21, 1),
-		sp:  NewSpatialPooler(NewSpatialParams()),
-		tm:  NewTemporalMemory(NewTemporalParams()),
+		enc: enc.NewRDScalarEncoder(400, 21, 1),
+		sp:  sp.NewSpatialPooler(sp.NewSpatialParams()),
+		tm:  tm.NewExtendedTemporalMemory(tm.NewTemporalParams()),
 	}
 }
 
