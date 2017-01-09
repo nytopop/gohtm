@@ -1,3 +1,5 @@
+// Package region provides an implementation agnostic interface for linking,
+// and interacting with computational units of the htm algorithm.
 package region
 
 import (

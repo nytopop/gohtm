@@ -1,3 +1,4 @@
+// Package vec provides vector manipulation functions for the htm algorithm.
 package vec
 
 // SDR Utility Functions

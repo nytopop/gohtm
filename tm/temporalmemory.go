@@ -1,3 +1,5 @@
+// Package tm provides an implementation agnostic interface for temporal
+// memory in the htm algorithm.
 package tm
 
 import "github.com/nytopop/gohtm/vec"

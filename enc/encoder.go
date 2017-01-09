@@ -1,3 +1,5 @@
+// Package enc provides an implementation agnostic interface for encoding and
+// decoding of data into a vector format suitable for the htm algorithm.
 package enc
 
 import "github.com/nytopop/gohtm/vec"

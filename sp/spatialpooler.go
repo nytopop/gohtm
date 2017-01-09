@@ -1,3 +1,5 @@
+// Package sp provides an implementation agnostic interface for spatial
+// pooling in the htm algorithm.
 package sp
 
 import (
