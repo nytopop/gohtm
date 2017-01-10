@@ -11,13 +11,6 @@ import (
 	"github.com/nytopop/gohtm/vec"
 )
 
-// RegionParams is a meta-struct containing parameters for a SpatialPooler
-// and a TemporalMemory instance.
-type RegionParams struct {
-	sp sp.SpatialParams
-	tp tm.TemporalParams
-}
-
 // RegionResult contains the output of calling Compute on a Region.
 type RegionResult struct {
 	data     interface{}
@@ -41,7 +34,7 @@ func NewRegion() Region {
 	return Region{
 		enc: enc.NewRDScalarEncoder(400, 21, 1),
 		sp:  sp.NewSpatialPooler(sp.NewSpatialParams()),
-		tm:  tm.NewExtendedTemporalMemory(tm.NewTemporalParams()),
+		tm:  tm.NewExtended(tm.NewExtendedParams()),
 	}
 }
 

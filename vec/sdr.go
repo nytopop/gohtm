@@ -1,8 +1,6 @@
 // Package vec provides vector manipulation functions for the htm algorithm.
 package vec
 
-// SDR Utility Functions
-
 // Compute the union of input vectors.
 // Returns a SparseBinaryVector comprising all active bits in inputs.
 func VectorUnion(input ...SparseBinaryVector) SparseBinaryVector {

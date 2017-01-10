@@ -1,9 +1,6 @@
 package cells
 
-import "math"
-
-/* Connections for Temporal Memory */
-
+/*
 // Synapse contains information about a unique synapse.
 type Synapse struct {
 	segment         *Segment
@@ -264,3 +261,4 @@ func (c *Connections) tempUpdateSynPerm(syn Synapse, mod float64) {
 	delete(syn.segment.synapses, syn)
 	new.segment.synapses[new] = true
 }
+*/

@@ -7,28 +7,10 @@ In progress.
 
 ## Overview
 
-enc
-  Encode
-  Decode
-
-tm
-  Compute
-  Reset
-
-sp
-  Compute
-
-cells
-  
-region
-  Compute
-  Link
-  Unlink
-
 ## Roadmap
 
 - [x] Encoder Base
-- [ ] Scalar Encoder
+- [x] Scalar Encoder
 - [x] Random Distributed Scalar Encoder
 - [x] Spatial Pooler
 - [ ] Temporal Memory
