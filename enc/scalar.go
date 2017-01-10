@@ -1,7 +1,5 @@
 package enc
 
-import "github.com/nytopop/gohtm/vec"
-
 type ScalarEncoderParams struct {
 	Buckets  int
 	Min, Max int
@@ -35,17 +33,23 @@ func NewScalarEncoder(p ScalarEncoderParams) *ScalarEncoder {
 	}
 }
 
-func (s *ScalarEncoder) Encode(d interface{}) vec.SparseBinaryVector {
-	out := vec.NewSparseBinaryVector(s.Bits)
+func (s *ScalarEncoder) Encode(d interface{}) []bool {
+	out := make([]bool, s.Bits)
 	i := s.P.Buckets * (d.(int) - s.P.Min) / s.Range
 	for j := 0; j < s.P.Active; j++ {
-		out.Set(i+j, true)
+		if (i + j) < (len(out) - 1) {
+			out[i+j] = true
+		} else {
+			if s.P.Wrap {
+				// TODO wraparound
+			}
+		}
 	}
 	return out
 }
 
-func (s *ScalarEncoder) Decode(sv vec.SparseBinaryVector) interface{} {
-	for i, v := range sv.Dense() {
+func (s *ScalarEncoder) Decode(sv []bool) interface{} {
+	for i, v := range sv {
 		if v {
 			return (i+1)*s.Range/s.P.Buckets - s.P.Min
 		}

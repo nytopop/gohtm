@@ -14,9 +14,9 @@ import (
 // RegionResult contains the output of calling Compute on a Region.
 type RegionResult struct {
 	data     interface{}
-	encoded  vec.SparseBinaryVector
-	spatial  vec.SparseBinaryVector
-	temporal vec.SparseBinaryVector
+	encoded  []bool
+	spatial  []bool
+	temporal []bool
 }
 
 // Region wraps an Encoder, SpatialPooler, and TemporalMemory instance
@@ -32,9 +32,9 @@ type Region struct {
 // NewRegion returns a new region.
 func NewRegion() Region {
 	return Region{
-		enc: enc.NewRDScalarEncoder(400, 21, 1),
-		sp:  sp.NewSpatialPooler(sp.NewSpatialParams()),
-		tm:  tm.NewExtended(tm.NewExtendedParams()),
+	//	enc: enc.NewRDScalarEncoder(400, 21, 1),
+	//	sp:  sp.NewSpatialPooler(sp.NewSpatialParams()),
+	//	tm:  tm.NewExtended(tm.NewExtendedParams()),
 	}
 }
 
@@ -45,27 +45,27 @@ func (r *Region) Compute(data interface{}, learn bool) RegionResult {
 
 	// encode input and prettyprint
 	sv := r.enc.Encode(data)
-	rv := r.sp.Compute(sv.Dense(), learn)
+	rv := r.sp.Compute(sv, learn)
 	tv := r.tm.Compute(rv, learn)
 
 	// Encoder
 	fmt.Println("Data:", data)
 
 	// Spatial Pooling
-	fmt.Println("SP Sparsity:", rv.Sparsity())
-	fmt.Println(rv.Pretty())
+	fmt.Println("SP Sparsity:", vec.Sparsity(rv))
+	fmt.Println(vec.Pretty(rv))
 
 	// Temporal Memory
-	fmt.Println("TM Sparsity:", tv.Sparsity())
-	fmt.Println(tv.Pretty())
+	fmt.Println("TM Sparsity:", vec.Sparsity(tv))
+	fmt.Println(vec.Pretty(tv))
 
 	//r.sp.Save("sp.json")
 
 	return RegionResult{
-		data:    data,
-		encoded: sv,
-		spatial: rv,
-		//	temporal: tv,
+		data:     data,
+		encoded:  sv,
+		spatial:  rv,
+		temporal: tv,
 	}
 }
 

@@ -1,6 +1,36 @@
 // Package vec provides vector manipulation functions for the htm algorithm.
 package vec
 
+func Active(s []bool) (out []int) {
+	for i := range s {
+		if s[i] {
+			out = append(out, i)
+		}
+	}
+	return
+}
+
+func Pretty(s []bool) (out string) {
+	for i := range s {
+		if s[i] {
+			out += "1"
+		} else {
+			out += "0"
+		}
+	}
+	return
+}
+
+func Sparsity(s []bool) float64 {
+	var sum int
+	for i := range s {
+		if s[i] {
+			sum++
+		}
+	}
+	return float64(sum / len(s))
+}
+
 // Compute the union of input vectors.
 // Returns a SparseBinaryVector comprising all active bits in inputs.
 func VectorUnion(input ...SparseBinaryVector) SparseBinaryVector {

@@ -214,7 +214,7 @@ func (sp *SpatialPooler) getInputNeighbors(center int) (nbs []int) {
 // Compute runs an input vector through the SpatialPooler algorithm,
 // and returns a vector containing the active columns. The learn
 // parameter specifies whether learning should be performed.
-func (sp *SpatialPooler) Compute(input []bool, learn bool) vec.SparseBinaryVector {
+func (sp *SpatialPooler) Compute(input []bool, learn bool) []bool {
 	if len(input) != sp.numInputs {
 		panic("Mismatched input dimensions!")
 	}
@@ -241,9 +241,9 @@ func (sp *SpatialPooler) Compute(input []bool, learn bool) vec.SparseBinaryVecto
 	}
 
 	// return active columns
-	active := vec.NewSparseBinaryVector(sp.numColumns)
-	for i, col := range sp.cols {
-		active.Set(i, col.active)
+	active := make([]bool, len(sp.cols))
+	for i := range sp.cols {
+		active[i] = sp.cols[i].active
 	}
 	return active
 }

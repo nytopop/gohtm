@@ -60,14 +60,17 @@ type V1Cell struct {
 // V1Segment represents a single dendritic segment attached to a cell.
 type V1Segment struct {
 	active   bool
+	live     int
 	synapses []V1Synapse
 }
 
 // V1Synapse represents the connection from the dendritic segment of a cell
 // to another cell, called the presynaptic cell.
 type V1Synapse struct {
-	cell int // presynaptic cell
-	perm int // permanence is integer, faster
+	cell      int // presynaptic cell
+	perm      int // permanence is integer, faster
+	active    bool
+	connected bool
 }
 
 func (v *V1) CreateSegment(cell int) {
@@ -87,4 +90,32 @@ func (v *V1) DepolarizedForCol(col int) []int {
 }
 
 func (v *V1) ComputeStatistics(active []bool) {
+	v.Clear()
+	for i := range v.cells {
+		for j := range v.cells[i].segments {
+			for k := range v.cells[i].segments[j].synapses {
+				if v.cells[i].segments[j].synapses[k].connected &&
+					active[v.cells[i].segments[j].synapses[k].cell] {
+					// increment counter, activate synapse
+				}
+				// i, j, k !
+				// check if this synapses
+			}
+		}
+	}
+	/*
+		for each segment, count # connected synapses to active cells : live
+
+	*/
+}
+
+func (v *V1) Clear() {
+	for i := range v.cells {
+		for j := range v.cells[i].segments {
+			for k := range v.cells[i].segments[j].synapses {
+				v.cells[i].segments[j].synapses[k].active = false
+				v.cells[i].segments[j].synapses[k].connected = false
+			}
+		}
+	}
 }

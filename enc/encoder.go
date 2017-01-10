@@ -2,8 +2,6 @@
 // decoding of data into a vector format suitable for the htm algorithm.
 package enc
 
-import "github.com/nytopop/gohtm/vec"
-
 /* Encoder Design Guidelines
 1. Semantically similar data should result in SDRs with overlapping active bits.
 2. The same input should always produce the same SDR as output.
@@ -15,6 +13,6 @@ import "github.com/nytopop/gohtm/vec"
 // should implement a Decode and an Encode method, persistent
 // state is not required.
 type Encoder interface {
-	Encode(interface{}) vec.SparseBinaryVector
-	Decode(vec.SparseBinaryVector) interface{}
+	Encode(interface{}) []bool
+	Decode([]bool) interface{}
 }
