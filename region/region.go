@@ -45,7 +45,7 @@ func (r *Region) Compute(data interface{}, learn bool) RegionResult {
 
 	// encode input and prettyprint
 	sv := r.enc.Encode(data)
-	rv := r.sp.Compute(sv, learn)
+	rv := r.sp.Compute(sv.Dense(), learn)
 	tv := r.tm.Compute(rv, learn)
 
 	// Encoder

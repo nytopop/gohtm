@@ -73,7 +73,7 @@ type spColumn struct {
 type SpatialPooler struct {
 	// state
 	cols             []spColumn
-	input            vec.SparseBinaryVector
+	input            []bool
 	inhibitionRadius int
 	iteration        int
 	learnIteration   int
@@ -214,8 +214,8 @@ func (sp *SpatialPooler) getInputNeighbors(center int) (nbs []int) {
 // Compute runs an input vector through the SpatialPooler algorithm,
 // and returns a vector containing the active columns. The learn
 // parameter specifies whether learning should be performed.
-func (sp *SpatialPooler) Compute(input vec.SparseBinaryVector, learn bool) vec.SparseBinaryVector {
-	if input.X != sp.numInputs {
+func (sp *SpatialPooler) Compute(input []bool, learn bool) vec.SparseBinaryVector {
+	if len(input) != sp.numInputs {
 		panic("Mismatched input dimensions!")
 	}
 	sp.input = input
@@ -322,7 +322,7 @@ func (sp *SpatialPooler) adaptSynapses() {
 	for i, col := range sp.cols {
 		if col.active {
 			for j, syn := range sp.cols[i].psyns {
-				if sp.input.Get(syn.idx) {
+				if sp.input[syn.idx] {
 					sp.cols[i].psyns[j].perm += sp.synPermActiveMod
 				} else {
 					sp.cols[i].psyns[j].perm -= sp.synPermInactiveMod
@@ -346,6 +346,8 @@ func (sp *SpatialPooler) inhibitColumnsGlobal(learn bool) {
 			overlaps[i] = col.overlap
 		}
 	}
+
+	// HOTSPOT : ~26% of execution time
 	winners := vec.SortIndices(overlaps)
 
 	n := int(sp.localAreaDensity * float64(sp.numColumns))
@@ -382,7 +384,7 @@ func (sp *SpatialPooler) updateoverlaps() {
 	for i := range sp.cols {
 		sp.cols[i].overlap = 0
 		for _, syn := range sp.cols[i].psyns {
-			if syn.connected && sp.input.Get(syn.idx) {
+			if syn.connected && sp.input[syn.idx] {
 				sp.cols[i].overlap++
 			}
 		}
