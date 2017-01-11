@@ -6,7 +6,7 @@ import "github.com/nytopop/gohtm/cells"
 // TemporalMemory region.
 type ExtendedParams struct {
 	NumColumns          int // input space dimensions
-	NumCells            int // cells per column
+	CellsPerColumn      int // cells per column
 	SegPerCell          int
 	SynPerSeg           int
 	ActivationThreshold int     // # of active synapses for 'active'
