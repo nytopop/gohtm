@@ -23,8 +23,7 @@ _testmain.go
 *.test
 *.prof
 
-# binary
-go-htm
-
-#
+# project files
 ref/
+gohtm
+cpuprofile
