@@ -1,9 +1,12 @@
 default: build
 
+all: build test run
+	echo All Success!
+
 test: 
 	go test -v ./...
 
-build: test
+build:
 	go build ./...
 	go build
 

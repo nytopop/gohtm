@@ -23,6 +23,36 @@ func main() {
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 
+	/* sizing
+	assert(fieldsize % sectorsize == 0 || boxSize)
+	numsectors == (fieldsize / boxsize) - 1
+
+	*/
+	// Split visual field into (sectorSize / 2)
+	fieldSize := 512
+	sectorSize := 16
+	boxSize := sectorSize / 2
+
+	// Ensure receptive fields sized approprately
+	mod := fieldSize % sectorSize
+	if (mod != 0) && (mod != boxSize) {
+		log.Fatalln("Mismatched field / sector size")
+	}
+
+	// calc box / sector sizes
+	// numBoxes := fieldSize / boxSize
+	numSectors := fieldSize / sectorSize
+
+	// generate bounds
+	sectors := make([]int, numSectors)
+	for i := range sectors {
+		// start at 0th, end at sectorSizeth
+		sectors[i] = i * sectorSize
+	}
+
+	fmt.Println(sectors)
+
+	// Spatial pooler speed test
 	epar := enc.NewScalarEncoderParams()
 	encoder := enc.NewScalarEncoder(epar)
 
@@ -53,5 +83,8 @@ func main() {
 		}
 	}
 
-	fmt.Println(n, "in", time.Since(total))
+	elap := time.Since(total)
+	rate := int(float64(n) / elap.Seconds())
+	fmt.Println(n, "in", elap)
+	fmt.Println(rate, "per second")
 }
