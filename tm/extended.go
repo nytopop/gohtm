@@ -61,8 +61,8 @@ func NewExtended(p ExtendedParams) *Extended {
 	}
 }
 
-// Compute iterates the TemporalMemory algorithm with the provided
-// vector of active columns from a SpatialPooler.
+// Compute iterates the TemporalMemory algorithm with the
+// provided vector of active columns from a SpatialPooler.
 func (e *Extended) Compute(active []bool, learn bool) []bool {
 	return []bool{}
 }

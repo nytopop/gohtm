@@ -27,6 +27,12 @@ Further, I'm devoting attention to vision oriented problems and coordination of 
 
 ## Experiments & research directions
 
+### Async processing
+
+If we can simulate each neuron in its own goroutine, this should simplify overall algorithmic processing. With fixed sparsity (0.02) representations, a reactive, event driven processing model should radically lower the CPU cost of iterating the algorithm - as each neuron will only be process inputs/outputs if it is signalled by some other neuron.
+
+In this model, each cell has a single broadcast channel, which other cells can connect to to receive messages. If synaptic weight is high enough to be connected, messages are successfully processed by the postsynaptic cell.
+
 ### Vision / Audio
 - [ ] Figure out how to code for intensity
 

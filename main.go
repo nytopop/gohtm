@@ -56,10 +56,10 @@ func main() {
 	epar := enc.NewScalarEncoderParams()
 	encoder := enc.NewScalarEncoder(epar)
 
-	spar := sp.NewSpatialParams()
+	spar := sp.NewV1Params()
 	spar.NumColumns = 2048
 	spar.NumInputs = encoder.Bits
-	spool := sp.NewSpatialPooler(spar)
+	spool := sp.NewV1(spar)
 
 	n := 10000
 

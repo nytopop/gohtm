@@ -7,6 +7,7 @@ package tm
 type TemporalMemory interface {
 	Compute(active []bool, learn bool) []bool
 	Reset()
+	Anomaly() float64
 	//Save()
 	//Load()
 }

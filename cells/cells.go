@@ -12,8 +12,3 @@ type Cells interface {
 	DepolarizedForCol(col int) []int
 	ComputeStatistics(active []bool)
 }
-
-/* Requirements
-We should never deal with internal datastructures from the calling code.
-All input/output should use generic types such as int / float64 / etc.
-*/
