@@ -19,7 +19,7 @@ type Cells interface {
 	MatchingSegsForCell(cell int) int
 	MatchingSegsForCol(col int) int
 
-	ComputeActivity(active []bool, learn bool)
+	ComputeActivity(active []bool)
 	Clear()
 	StartNewIteration()
 }
