@@ -10,8 +10,8 @@ type Cells interface {
 	CreateSynapse(cell, seg, target int) // TODO
 	DestroySynapse(cell, seg, syn int)   // TODO
 
-	AdaptSynapses(cell int, active []int) // TODO
-	GrowSynapses(cell int, winners []int) // TODO
+	AdaptSynapses(cell int, prevActive []bool)
+	GrowSynapses(cell int, prevWinners []bool) // TODO
 
 	CellsForCol(col int) []int
 	ActiveSegsForCell(cell int) int
@@ -19,6 +19,7 @@ type Cells interface {
 	MatchingSegsForCell(cell int) int
 	MatchingSegsForCol(col int) int
 
-	ComputeActivity(active []bool)
+	ComputeActivity(active []bool, learn bool)
 	Clear()
+	StartNewIteration()
 }

@@ -40,7 +40,7 @@ func main() {
 
 	start := time.Now()
 
-	n := 1024
+	n := 512
 	for i := 0; i < n; i++ {
 		v := e.Encode(rand.Intn(255))
 		v = s.Compute(v, true)

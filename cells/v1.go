@@ -96,21 +96,66 @@ func (v *V1) DestroySynapse(cell, seg, syn int) {
 
 // AdaptSynapses adapts synapses on a cell to the provided slice
 // of cells that were active in the previous time step.
-func (v *V1) AdaptSynapses(cell int, active []int) {
-	// for each active seg on cell
-	// strengthen active synapses
-	// weaken inactive synapses
+func (v *V1) AdaptSynapses(cell int, prevActive []bool) {
+	// delete queue for synapses
+	synQueue := make([][2]int, 0)
 
+	var perm float32
 	for i := range v.cells[cell].segments {
 		for j := range v.cells[cell].segments[i].synapses {
-			// check if synapse.cell is in active
+			perm = v.cells[cell].segments[i].synapses[j].perm
+
+			// check if synapse.cell is in prevActiveCells
+			switch prevActive[v.cells[cell].segments[i].synapses[j].cell] {
+			case true:
+				perm += v.P.SynPermActiveMod
+			case false:
+				perm -= v.P.SynPermInactiveMod
+			}
+
+			// constrain permanence to [0.0 : 1.0]
+			switch {
+			case perm < 0.0:
+				perm = 0.0
+			case perm > 1.0:
+				perm = 1.0
+			}
+
+			// If permanence < 0.001, add synapse to destruction queue
+			// If not, update permanence
+			switch {
+			case perm < 0.001:
+				var syn [2]int
+				syn[0], syn[1] = i, j
+				synQueue = append(synQueue, syn)
+			default:
+				v.cells[cell].segments[i].synapses[j].perm = perm
+			}
 		}
+	}
+
+	// Destroy synapses in queue
+	for i := range synQueue {
+		v.DestroySynapse(cell, synQueue[i][0], synQueue[i][1])
+	}
+
+	// Add empty segments to destruction queue
+	segQueue := make([]int, 0)
+	for i := range v.cells[cell].segments {
+		if len(v.cells[cell].segments[i].synapses) == 0 {
+			segQueue = append(segQueue, i)
+		}
+	}
+
+	// Destroy segments in queue
+	for i := range segQueue {
+		v.DestroySegment(cell, segQueue[i])
 	}
 }
 
 // GrowSynapses grows new synapses on a cell to the provided slice
 // of cells chosen as winners in the previous time step.
-func (v *V1) GrowSynapses(cell int, winners []int) {
+func (v *V1) GrowSynapses(cell int, prevWinners []bool) {
 	// for each active seg on cell
 	// grow new synapses to prev winner cells
 }
@@ -162,14 +207,13 @@ func (v *V1) MatchingSegsForCol(col int) int {
 // ComputeActivity computes cell, segment, and synapse activity
 // in regards to currently active columns.
 func (v *V1) ComputeActivity(active []bool) {
-	v.Clear()
 	for i := range v.cells {
 		for j := range v.cells[i].segments {
 			// count live synapses on each segment
 			var live int
 			for _, syn := range v.cells[i].segments[j].synapses {
 				// if the synapse corresponds to a cell in an active column
-				if active[syn.cell/v.P.CellsPerCol] {
+				if active[syn.cell] {
 					// if synapse is connected
 					if syn.perm >= v.P.SynPermConnected {
 						live += 1
@@ -190,10 +234,8 @@ func (v *V1) ComputeActivity(active []bool) {
 	}
 }
 
-// Clear clears temporary data from all cells and segments and increments
-// the iteration counter.
+// Clear clears temporary data from all cells and segments.
 func (v *V1) Clear() {
-	v.iteration += 1
 	for i := range v.cells {
 		v.cells[i].active = 0
 		v.cells[i].matching = 0
@@ -202,4 +244,9 @@ func (v *V1) Clear() {
 			v.cells[i].segments[j].matching = false
 		}
 	}
+}
+
+// StartNewIteration increments the iteration counter.
+func (v *V1) StartNewIteration() {
+	v.iteration += 1
 }

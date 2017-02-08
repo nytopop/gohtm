@@ -29,10 +29,10 @@ type V1 struct {
 	P    V1Params
 	Cons cells.Cells
 
-	PrevActiveCells []int
-	PrevWinnerCells []int
-	ActiveCells     []int
-	WinnerCells     []int
+	PrevActiveCells []bool
+	PrevWinnerCells []bool
+	ActiveCells     []bool
+	WinnerCells     []bool
 	iteration       int
 }
 
@@ -47,10 +47,10 @@ func NewV1(p V1Params) *V1 {
 	return &V1{
 		P:               p,
 		Cons:            cells.NewV1(cp),
-		PrevActiveCells: make([]int, 0, p.NumColumns*p.CellsPerCol),
-		PrevWinnerCells: make([]int, 0, p.NumColumns*p.CellsPerCol),
-		ActiveCells:     make([]int, 0, p.NumColumns*p.CellsPerCol),
-		WinnerCells:     make([]int, 0, p.NumColumns*p.CellsPerCol),
+		PrevActiveCells: make([]bool, 0, p.NumColumns*p.CellsPerCol),
+		PrevWinnerCells: make([]bool, 0, p.NumColumns*p.CellsPerCol),
+		ActiveCells:     make([]bool, 0, p.NumColumns*p.CellsPerCol),
+		WinnerCells:     make([]bool, 0, p.NumColumns*p.CellsPerCol),
 		iteration:       0,
 	}
 }
@@ -79,11 +79,8 @@ func (e *V1) activateCells(active []bool, learn bool) {
 	// Allocate memory for active / winner cells
 	e.PrevActiveCells = e.ActiveCells
 	e.PrevWinnerCells = e.WinnerCells
-	e.ActiveCells = make([]int, 0, e.P.NumColumns*e.P.CellsPerCol)
-	e.WinnerCells = make([]int, 0, e.P.NumColumns*e.P.CellsPerCol)
-
-	// Compute active & matching dendrite segments
-	e.Cons.ComputeActivity(active)
+	e.ActiveCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
+	e.WinnerCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
 
 	// TODO : run a count on how big activecells and winnercells
 	// 		  actually get, probably don't need full (cols * cellspercol)
@@ -95,12 +92,16 @@ func (e *V1) activateCells(active []bool, learn bool) {
 			switch {
 			case syns > 0:
 				cellsToAdd := e.activatePredictedColumn(i, learn)
-				e.ActiveCells = append(e.ActiveCells, cellsToAdd...)
-				e.WinnerCells = append(e.WinnerCells, cellsToAdd...)
+				for _, c := range cellsToAdd {
+					e.ActiveCells[c] = true
+					e.WinnerCells[c] = true
+				}
 			case syns == 0:
 				cellsToAdd, winnerCell := e.burstColumn(i, learn)
-				e.ActiveCells = append(e.ActiveCells, cellsToAdd...)
-				e.WinnerCells = append(e.WinnerCells, winnerCell)
+				for _, c := range cellsToAdd {
+					e.ActiveCells[c] = true
+				}
+				e.WinnerCells[winnerCell] = true
 			}
 		} else {
 			// if has matching dendrite segments,
@@ -133,8 +134,6 @@ func (e *V1) activatePredictedColumn(col int, learn bool) []int {
 			if learn {
 				e.Cons.AdaptSynapses(i, e.PrevActiveCells)
 				e.Cons.GrowSynapses(i, e.PrevWinnerCells)
-				// strengthen active synapses
-				// weaken inactive synapses
 				// grow synapses to prev winner cells IF below max seg count
 			}
 		}
@@ -153,13 +152,23 @@ func (e *V1) punishPredictedColumn(col int) {
 }
 
 func (e *V1) activateDendrites(learn bool) {
+	/*
+		for each
+	*/
+	if learn {
+		e.Cons.StartNewIteration()
+	}
+
+	// Compute active & matching dendrite segments
+	e.Cons.Clear()
+	e.Cons.ComputeActivity(e.ActiveCells)
 }
 
 // Reset clears temporary data so sequences are not learned between
 // the current and next time step.
 func (e *V1) Reset() {
-	e.PrevActiveCells = make([]int, 0, e.P.NumColumns*e.P.CellsPerCol)
-	e.PrevWinnerCells = make([]int, 0, e.P.NumColumns*e.P.CellsPerCol)
-	e.ActiveCells = make([]int, 0, e.P.NumColumns*e.P.CellsPerCol)
-	e.WinnerCells = make([]int, 0, e.P.NumColumns*e.P.CellsPerCol)
+	e.PrevActiveCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
+	e.PrevWinnerCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
+	e.ActiveCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
+	e.WinnerCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
 }
