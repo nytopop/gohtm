@@ -10,6 +10,7 @@ import (
 
 	"github.com/nytopop/gohtm/enc"
 	"github.com/nytopop/gohtm/sp"
+	"github.com/nytopop/gohtm/tm"
 )
 
 func main() {
@@ -18,73 +19,80 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer f.Close()
 
-	pprof.StartCPUProfile(f)
+	if err := pprof.StartCPUProfile(f); err != nil {
+		log.Fatalln(err)
+	}
 	defer pprof.StopCPUProfile()
 
-	/* sizing
-	assert(fieldsize % sectorsize == 0 || boxSize)
-	numsectors == (fieldsize / boxsize) - 1
-
+	// RETINA
+	/*
+		r := enc.NewRetina(640, 480)
+		r.Size()
 	*/
-	// Split visual field into (sectorSize / 2)
-	fieldSize := 512
-	sectorSize := 16
-	boxSize := sectorSize / 2
 
-	// Ensure receptive fields sized approprately
-	mod := fieldSize % sectorSize
-	if (mod != 0) && (mod != boxSize) {
-		log.Fatalln("Mismatched field / sector size")
-	}
-
-	// calc box / sector sizes
-	// numBoxes := fieldSize / boxSize
-	numSectors := fieldSize / sectorSize
-
-	// generate bounds
-	sectors := make([]int, numSectors)
-	for i := range sectors {
-		// start at 0th, end at sectorSizeth
-		sectors[i] = i * sectorSize
-	}
-
-	fmt.Println(sectors)
-
-	// Spatial pooler speed test
-	epar := enc.NewScalarEncoderParams()
-	encoder := enc.NewScalarEncoder(epar)
-
+	// Temporal Memory Test
+	e := enc.NewScalar(enc.NewScalarParams())
 	spar := sp.NewV1Params()
-	spar.NumColumns = 2048
-	spar.NumInputs = encoder.Bits
-	spool := sp.NewV1(spar)
+	spar.NumInputs = e.Bits
+	s := sp.NewV1(spar)
+	t := tm.NewV1(tm.NewV1Params())
 
-	n := 10000
-
-	total := time.Now()
 	start := time.Now()
 
-	var v []bool
-	for i := 1; i <= n; i++ {
-		// encoding
-		v = encoder.Encode(rand.Intn(255))
-		//encoder.Decode(v)
-
-		// spatial pooling
-		spool.Compute(v, true)
-
-		// temporal memory
-
-		if i%1000 == 0 {
-			fmt.Println(i, "in", time.Since(start))
-			start = time.Now()
-		}
+	n := 1024
+	for i := 0; i < n; i++ {
+		v := e.Encode(rand.Intn(255))
+		v = s.Compute(v, true)
+		t.Compute(v, true)
 	}
 
-	elap := time.Since(total)
-	rate := int(float64(n) / elap.Seconds())
-	fmt.Println(n, "in", elap)
-	fmt.Println(rate, "per second")
+	elap := time.Since(start)
+
+	per := float32(elap.Nanoseconds()) / float32(n) / 1000 / 1000
+	fmt.Println(n, "in", elap, "||", per, "ms per iteration")
+
+	// Spatial pooler speed test
+	/*
+		total := time.Now()
+
+		k := make(chan int)
+		var wg sync.WaitGroup
+		for j := 0; j < 4; j++ {
+			wg.Add(1)
+			go func(j int) {
+				encoder := enc.NewScalar(enc.NewScalarParams())
+				spar := sp.NewV1Params()
+				spar.NumInputs = encoder.Bits
+				spool := sp.NewV1(spar)
+				var v []bool
+				n := 10000
+				for i := 1; i <= n; i++ {
+					v = encoder.Encode(rand.Intn(255))
+					spool.Compute(v, true)
+				}
+
+				wg.Done()
+
+				fmt.Println("ping", n)
+				k <- n
+			}(j)
+
+		}
+
+		wg.Wait()
+		var t int
+		var n int
+		for i := range k {
+			n += i
+			t += 1
+			if t == 4 {
+				close(k)
+			}
+		}
+		elap := time.Since(total)
+		rate := int(float64(n) / elap.Seconds())
+		fmt.Println(n, "in", elap)
+		fmt.Println(rate, "per second")
+	*/
 }

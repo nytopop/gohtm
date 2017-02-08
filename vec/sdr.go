@@ -1,6 +1,7 @@
 // Package vec provides vector manipulation functions for the htm algorithm.
 package vec
 
+// Active returns a slice indices to active vector positions.
 func Active(s []bool) (out []int) {
 	for i := range s {
 		if s[i] {
@@ -10,6 +11,7 @@ func Active(s []bool) (out []int) {
 	return
 }
 
+// Pretty returns a prettified string representation of a vector.
 func Pretty(s []bool) (out string) {
 	for i := range s {
 		if s[i] {
@@ -21,6 +23,7 @@ func Pretty(s []bool) (out string) {
 	return
 }
 
+// Sparsity returns a sparsity measure of a vector.
 func Sparsity(s []bool) float64 {
 	var sum int
 	for i := range s {

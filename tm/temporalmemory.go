@@ -5,9 +5,7 @@ package tm
 // TemporalMemory is an interface defining the functionality of
 // a temporal memory region.
 type TemporalMemory interface {
-	Compute(active []bool, learn bool) []bool
+	Compute(active []bool, learn bool)
 	Reset()
 	Anomaly() float64
-	//Save()
-	//Load()
 }

@@ -1,15 +1,16 @@
 package enc
 
-type ScalarEncoderParams struct {
+// ScalarParams represents a parameter set for a Scalar Encoder.
+type ScalarParams struct {
 	Buckets  int
 	Min, Max int
 	Active   int
 	Wrap     bool
 }
 
-// NewScalarEncoderParams returns a default param set.
-func NewScalarEncoderParams() ScalarEncoderParams {
-	return ScalarEncoderParams{
+// NewScalarParams returns a default param set.
+func NewScalarParams() ScalarParams {
+	return ScalarParams{
 		Buckets: 64,
 		Min:     0,
 		Max:     63,
@@ -18,22 +19,22 @@ func NewScalarEncoderParams() ScalarEncoderParams {
 	}
 }
 
-// ScalarEncoder is a linearly derived scalar encoder.
-type ScalarEncoder struct {
-	P     ScalarEncoderParams
+// Scalar is a linearly derived scalar encoder.
+type Scalar struct {
+	P     ScalarParams
 	Bits  int
 	Range int
 }
 
-func NewScalarEncoder(p ScalarEncoderParams) *ScalarEncoder {
-	return &ScalarEncoder{
+func NewScalar(p ScalarParams) *Scalar {
+	return &Scalar{
 		P:     p,
 		Bits:  p.Buckets + p.Active - 1,
 		Range: p.Max - p.Min, // should be Absolute value
 	}
 }
 
-func (s *ScalarEncoder) Encode(d interface{}) []bool {
+func (s *Scalar) Encode(d interface{}) []bool {
 	out := make([]bool, s.Bits)
 	i := s.P.Buckets * (d.(int) - s.P.Min) / s.Range
 	for j := 0; j < s.P.Active; j++ {
@@ -48,7 +49,7 @@ func (s *ScalarEncoder) Encode(d interface{}) []bool {
 	return out
 }
 
-func (s *ScalarEncoder) Decode(sv []bool) interface{} {
+func (s *Scalar) Decode(sv []bool) interface{} {
 	for i, v := range sv {
 		if v {
 			return (i+1)*s.Range/s.P.Buckets - s.P.Min

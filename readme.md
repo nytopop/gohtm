@@ -44,3 +44,7 @@ Edge detect --> oriented edge detect -->
 
 ### Networks
 - [ ] Spec out a network definition language. Code generation? 
+- [ ] First in Last out stack for processing
+
+### Temporal memory
+- [ ] get anomaly score, data about current sequence state, etc

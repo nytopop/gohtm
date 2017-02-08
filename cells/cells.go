@@ -5,10 +5,20 @@ package cells
 // Cells is an interface for TemporalMemory compatible cellular and synaptic
 // state.
 type Cells interface {
-	CreateSegment(cell int)
-	DestroySegment(cell, seg int)
-	CreateSynapse(cell, seg, target int)
-	DestroySynapse(cell, seg, syn int)
-	DepolarizedForCol(col int) []int
-	ComputeStatistics(active []bool)
+	CreateSegment(cell int)              // TODO
+	DestroySegment(cell, seg int)        // TODO
+	CreateSynapse(cell, seg, target int) // TODO
+	DestroySynapse(cell, seg, syn int)   // TODO
+
+	AdaptSynapses(cell int, active []int) // TODO
+	GrowSynapses(cell int, winners []int) // TODO
+
+	CellsForCol(col int) []int
+	ActiveSegsForCell(cell int) int
+	ActiveSegsForCol(col int) int
+	MatchingSegsForCell(cell int) int
+	MatchingSegsForCol(col int) int
+
+	ComputeActivity(active []bool)
+	Clear()
 }
