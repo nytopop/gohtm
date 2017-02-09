@@ -11,9 +11,9 @@ type ScalarParams struct {
 // NewScalarParams returns a default param set.
 func NewScalarParams() ScalarParams {
 	return ScalarParams{
-		Buckets: 64,
+		Buckets: 60,
 		Min:     0,
-		Max:     63,
+		Max:     60,
 		Active:  10,
 		Wrap:    false,
 	}

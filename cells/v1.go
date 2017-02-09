@@ -1,5 +1,10 @@
 package cells
 
+import (
+	"fmt"
+	"math/rand"
+)
+
 /*
 Synapses connect a segment --> cell
 
@@ -26,6 +31,7 @@ type V1Params struct {
 	InitPerm           float32 // initial permanence of new synapses
 	ActiveThreshold    int     // number live synapses to mark segment active
 	MatchingThreshold  int     // # of potential synapses for learning ????
+	MaxNewSyns         int     // # of new synapses to grow per cell
 }
 
 // NewV1Params returns a default parameter set.
@@ -41,6 +47,7 @@ func NewV1Params() V1Params {
 		InitPerm:           0.21,
 		ActiveThreshold:    12,
 		MatchingThreshold:  8,
+		MaxNewSyns:         20,
 	}
 }
 
@@ -153,11 +160,62 @@ func (v *V1) AdaptSynapses(cell int, prevActive []bool) {
 	}
 }
 
-// GrowSynapses grows new synapses on a cell to the provided slice
-// of cells chosen as winners in the previous time step.
+// GrowSynapses grows new synapses on a cell to randomly selected
+// cells from the provided slice of cells chosen as winners in the
+// previous time step.
 func (v *V1) GrowSynapses(cell int, prevWinners []bool) {
 	// for each active seg on cell
 	// grow new synapses to prev winner cells
+
+	// disable winners that are already synapsed
+	var c int
+	for i := range v.cells[cell].segments {
+		for j := range v.cells[cell].segments[i].synapses {
+			c = v.cells[cell].segments[i].synapses[j].cell
+			prevWinners[c] = false
+		}
+	}
+
+	// make slice of winner cells
+	candidates := make([]int, 0, 40) // TODO sizing
+	for i := range prevWinners {
+		if prevWinners[i] {
+			candidates = append(candidates, i)
+		}
+	}
+
+	// decide whether to use all candidates or a permutation
+	// of v.P.MaxNewSyns candidate cells
+	var r []int
+	switch {
+	case len(candidates) < v.P.MaxNewSyns:
+		// we connect to all cells
+		r = candidates
+	case len(candidates) >= v.P.MaxNewSyns:
+		// we slice the permutations to MaxSyns
+		r = rand.Perm(len(candidates))[:v.P.MaxNewSyns]
+	}
+
+	// split r into len(cell.activeSegments) pieces
+	dif := len(r) / v.cells[cell].active
+	fmt.Println(dif)
+
+	// make slice of active dendrites
+	segs := make([]int, 0, v.cells[cell].active)
+	for i := range v.cells[cell].segments {
+		if v.cells[cell].segments[i].active {
+			segs = append(segs, i)
+		}
+	}
+
+	// grow new synapses
+	var cursor int
+	for i := range segs {
+		cursor = i * dif
+		for j := 0; j < dif; j++ {
+			v.CreateSynapse(cell, segs[i], r[cursor+i])
+		}
+	}
 }
 
 // CellsForCol returns a slice of all cell indices within the

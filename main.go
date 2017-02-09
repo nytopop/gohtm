@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"runtime/pprof"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/nytopop/gohtm/enc"
 	"github.com/nytopop/gohtm/sp"
 	"github.com/nytopop/gohtm/tm"
+	"github.com/nytopop/gohtm/vec"
 )
 
 func main() {
@@ -38,19 +38,30 @@ func main() {
 	s := sp.NewV1(spar)
 	t := tm.NewV1(tm.NewV1Params())
 
+	seq := []int{
+		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
+		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
+		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
+		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
+		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
+		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
+		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
+	}
+
 	start := time.Now()
 
-	n := 512
-	for i := 0; i < n; i++ {
-		v := e.Encode(rand.Intn(255))
+	for i := range seq {
+		v := e.Encode(seq[i])
+		fmt.Println(vec.Pretty(v), seq[i])
 		v = s.Compute(v, true)
+		fmt.Println(vec.Pretty(v))
 		t.Compute(v, true)
 	}
 
 	elap := time.Since(start)
 
-	per := float32(elap.Nanoseconds()) / float32(n) / 1000 / 1000
-	fmt.Println(n, "in", elap, "||", per, "ms per iteration")
+	per := float32(elap.Nanoseconds()) / float32(len(seq)) / 1000 / 1000
+	fmt.Println(len(seq), "in", elap, "||", per, "ms per iteration")
 
 	// Spatial pooler speed test
 	/*
