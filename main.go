@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"runtime/pprof"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"github.com/nytopop/gohtm/enc"
 	"github.com/nytopop/gohtm/sp"
 	"github.com/nytopop/gohtm/tm"
-	"github.com/nytopop/gohtm/vec"
 )
 
 func main() {
@@ -34,27 +34,29 @@ func main() {
 	// Temporal Memory Test
 	e := enc.NewScalar(enc.NewScalarParams())
 	spar := sp.NewV1Params()
-	spar.NumInputs = e.Bits
+	spar.NumInputs = e.Bits * 9
 	s := sp.NewV1(spar)
 	t := tm.NewV1(tm.NewV1Params())
 
-	seq := []int{
-		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
-		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
-		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
-		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
-		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
-		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
-		0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50,
-	}
-
 	start := time.Now()
 
+	n := 256
+	nn := 9
+	seq := make([][]int, n)
+	for i := 0; i < n; i++ {
+		seq[i] = make([]int, nn)
+		for j := 0; j < nn; j++ {
+			seq[i][j] = rand.Intn(64)
+		}
+	}
+
+	var v []bool
 	for i := range seq {
-		v := e.Encode(seq[i])
-		fmt.Println(vec.Pretty(v), seq[i])
-		v = s.Compute(v, true)
-		fmt.Println(vec.Pretty(v))
+		v = make([]bool, 0, e.Bits*9)
+		for j := range seq[i] {
+			v = append(v, e.Encode(seq[i][j])...)
+		}
+		v = s.Compute(v, false)
 		t.Compute(v, true)
 	}
 

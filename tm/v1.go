@@ -57,12 +57,33 @@ func NewV1(p V1Params) *V1 {
 	}
 }
 
+// GetPrediction returns the predicted input for the next time step.
+func (e *V1) GetPrediction() []bool {
+	for i := 0; i < e.P.NumColumns; i++ {
+		fmt.Println(i)
+	}
+	return []bool{}
+}
+
 // Compute iterates the TemporalMemory algorithm with the
 // provided vector of active columns from a SpatialPooler.
 func (e *V1) Compute(active []bool, learn bool) {
-	e.iteration += 1
+	//e.Cons.Counts()
+	// Compute active / depolarized cells
 	e.activateCells(active, learn)
-	e.activateDendrites(learn)
+
+	// Cleanup neural net
+	e.Cons.Cleanup()
+	//e.Cons.Counts()
+
+	// Compute active & matching dendrite segments
+	e.Cons.Clear()
+	e.Cons.ComputeActivity(e.ActiveCells)
+
+	if learn {
+		e.iteration += 1
+		e.Cons.StartNewIteration()
+	}
 }
 
 // Calculate the active cells using active columns and dendrite segments.
@@ -84,23 +105,19 @@ func (e *V1) activateCells(active []bool, learn bool) {
 	e.ActiveCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
 	e.WinnerCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
 
-	// TODO : run a count on how big activecells and winnercells
-	// 		  actually get, probably don't need full (cols * cellspercol)
 	for i := range active {
 		if active[i] {
-			// if has active dendrite segments, activatePredictedCol
-			// if not, burst
 			syns := e.Cons.ActiveSegsForCol(i)
 			switch {
 			case syns > 0:
-				fmt.Println("Activating predicted col", i)
+				//fmt.Println("Activating predicted col", i)
 				cellsToAdd := e.activatePredictedColumn(i, learn)
 				for _, c := range cellsToAdd {
 					e.ActiveCells[c] = true
 					e.WinnerCells[c] = true
 				}
 			case syns == 0:
-				fmt.Println("Bursting col", i)
+				//fmt.Println("Bursting col", i)
 				cellsToAdd, winnerCell := e.burstColumn(i, learn)
 				for _, c := range cellsToAdd {
 					e.ActiveCells[c] = true
@@ -108,11 +125,9 @@ func (e *V1) activateCells(active []bool, learn bool) {
 				e.WinnerCells[winnerCell] = true
 			}
 		} else {
-			// if has matching dendrite segments,
-			// punishPredictedColumn
 			if learn {
 				if e.Cons.MatchingSegsForCol(i) > 0 {
-					fmt.Println("Punishing predicted col", i)
+					//fmt.Println("Punishing predicted col", i)
 					e.punishPredictedColumn(i)
 				}
 			}
@@ -133,12 +148,15 @@ func (e *V1) activatePredictedColumn(col int, learn bool) []int {
 	cellsToAdd := make([]int, 0, e.P.CellsPerCol) // TODO sizing ???
 
 	for _, i := range e.Cons.CellsForCol(col) {
-		if e.Cons.ActiveSegsForCell(i) > 0 {
+		act := e.Cons.ActiveSegsForCell(i)
+		if len(act) > 0 {
 			cellsToAdd = append(cellsToAdd, i)
 
 			if learn {
-				e.Cons.AdaptSynapses(i, e.PrevActiveCells)
-				e.Cons.GrowSynapses(i, e.PrevWinnerCells)
+				for j := range act {
+					e.Cons.AdaptSegment(i, act[j], e.PrevActiveCells)
+					e.Cons.GrowSynapses(i, act[j], e.PrevWinnerCells)
+				}
 			}
 		}
 	}
@@ -149,29 +167,60 @@ func (e *V1) activatePredictedColumn(col int, learn bool) []int {
 func (e *V1) burstColumn(col int, learn bool) ([]int, int) {
 	/*
 		mark all cells as active
-		if there are
+		if any matching segments
+			find most active matching segment, mark its cell as winner
+			if learn
+				grow & reinforce synapse to prevWinnerCells
+		if no matching segments
+			find cell with least # segments, mark it as winner
+			if learn
+				if any prevWinnerCells
+					add segment to this winner cell
+					grow synapses to prevWinnerCells
 	*/
-	cellsToAdd := make([]int, 0, e.P.NumColumns) // TODO sizing ???
-	winnerCell := 0
+
+	cellsToAdd := e.Cons.CellsForCol(col)
+	var winnerCell int
+	var winnerSeg int
+
+	segs := e.Cons.MatchingSegsForCol(col)
+	switch {
+	case segs > 0:
+		winnerCell, winnerSeg = e.Cons.BestMatchingSegForCol(col)
+		if learn {
+			e.Cons.AdaptSegment(winnerCell, winnerSeg, e.PrevActiveCells)
+			e.Cons.GrowSynapses(winnerCell, winnerSeg, e.PrevWinnerCells)
+		}
+	case segs == 0:
+		winnerCell = e.Cons.LeastSegsForCol(col)
+		if learn {
+			winnerSeg = e.Cons.CreateSegment(winnerCell)
+			e.Cons.GrowSynapses(winnerCell, winnerSeg, e.PrevWinnerCells)
+		}
+	}
+
 	return cellsToAdd, winnerCell
 }
 
 func (e *V1) punishPredictedColumn(col int) {
-}
+	/*
+		for each matching segment in the column
+			weaken active synapses
+	*/
 
-func (e *V1) activateDendrites(learn bool) {
-	if learn {
-		e.Cons.StartNewIteration()
+	cells := e.Cons.CellsForCol(col)
+	for i := range cells {
+		segs := e.Cons.MatchingSegsForCell(cells[i])
+		for j := range segs {
+			e.Cons.PunishSegment(cells[i], segs[j], e.PrevActiveCells)
+		}
 	}
-
-	// Compute active & matching dendrite segments
-	e.Cons.Clear()
-	e.Cons.ComputeActivity(e.ActiveCells)
 }
 
 // Reset clears temporary data so sequences are not learned between
 // the current and next time step.
 func (e *V1) Reset() {
+	e.Cons.Clear()
 	e.PrevActiveCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
 	e.PrevWinnerCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
 	e.ActiveCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
