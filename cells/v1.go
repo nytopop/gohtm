@@ -2,50 +2,12 @@ package cells
 
 import "math/rand"
 
-/*
-Synapses connect a segment --> cell
-
-cell1: A.1.2.3.4
-cell2: B.1.2.3.4
-
-syn1: A.1 --> B
-syn2: B.1 --> A
-NOT DUPLICATES!
-
-Do everything at the index level
-cells -> columns -> segments -> synapses
-*/
-
 // V1Params contains parameters for initialization of V1 cellular state.
 type V1Params struct {
-	NumColumns         int     // number of columns
-	CellsPerCol        int     // cells per column
-	SegsPerCell        int     // max segments per cell
-	SynsPerSeg         int     // max synapses per segment
-	SynPermConnected   float32 // synapse permanence connection threshold
-	SynPermActiveMod   float32 // synapse permanence increment
-	SynPermInactiveMod float32 // synapse permanence decrement
-	InitPerm           float32 // initial permanence of new synapses
-	ActiveThreshold    int     // number live synapses to mark segment active
-	MatchingThreshold  int     // # of potential synapses for learning ????
-	MaxNewSyns         int     // # of new synapses to grow per cell
-}
-
-// NewV1Params returns a default parameter set.
-func NewV1Params() V1Params {
-	return V1Params{
-		NumColumns:         64,
-		CellsPerCol:        8,
-		SegsPerCell:        16,
-		SynsPerSeg:         16,
-		SynPermConnected:   0.5,
-		SynPermActiveMod:   0.05,
-		SynPermInactiveMod: 0.03,
-		InitPerm:           0.21,
-		ActiveThreshold:    12,
-		MatchingThreshold:  8,
-		MaxNewSyns:         20,
-	}
+	NumColumns  int
+	CellsPerCol int
+	SegsPerCell int
+	SynsPerSeg  int
 }
 
 // V1 cellular state interface.
@@ -70,7 +32,7 @@ func NewV1(p V1Params) *V1 {
 
 // V1Cell represents a single cell.
 type V1Cell struct {
-	active, matching int // number of active & matching segments
+	active, matching int
 	segments         []V1Segment
 }
 
@@ -84,37 +46,49 @@ type V1Segment struct {
 // V1Synapse represents the connection from the dendritic segment of a cell
 // to another cell, called the presynaptic cell.
 type V1Synapse struct {
-	cell int     // presynaptic cell
-	perm float32 // permanence of connection
+	cell int
+	perm float32
 }
 
 func (v *V1) CreateSegment(cell int) int {
-	// BUG :: v.P.SegsPerCell ignored!
-	v.cells[cell].segments = append(
-		v.cells[cell].segments,
-		V1Segment{
-			active:   false,
-			matching: false,
-			synapses: make([]V1Synapse, 0)})
+	if len(v.cells[cell].segments) < v.P.SegsPerCell {
+		v.cells[cell].segments = append(
+			v.cells[cell].segments,
+			V1Segment{
+				active:   false,
+				matching: false,
+				synapses: make([]V1Synapse, 0)})
+	} else {
+		// BUG :: how do we handle this?
+		//	fmt.Println("too many segments on cell")
+	}
 
 	return len(v.cells[cell].segments) - 1
 }
 
-func (v *V1) CreateSynapse(cell, seg, target int) {
-	// BUG :: v.P.SynsPerSeg ignored!
-	// BUG :: duplicate synapses! check before creating a new synapse
-	v.cells[cell].segments[seg].synapses = append(
-		v.cells[cell].segments[seg].synapses,
-		V1Synapse{
-			cell: target,
-			perm: v.P.InitPerm})
+func (v *V1) CreateSynapse(cell, seg, target int, perm float32) {
+	for i := range v.cells[cell].segments[seg].synapses {
+		if v.cells[cell].segments[seg].synapses[i].cell == target {
+			return
+		}
+	}
+
+	if len(v.cells[cell].segments[seg].synapses) < v.P.SynsPerSeg {
+		v.cells[cell].segments[seg].synapses = append(
+			v.cells[cell].segments[seg].synapses,
+			V1Synapse{
+				cell: target,
+				perm: perm})
+	} else {
+		// BUG :: how do we handle this?
+		//		fmt.Println("too many synapses on segment")
+	}
 }
 
 // AdaptSegment adapts synapses on a segment to the provided slice
 // of cells active in the previous time step.
-func (v *V1) AdaptSegment(cell, seg int, prevActive []bool) {
-	// delete queue for synapses
-	//synQueue := make([]int, 0)
+func (v *V1) AdaptSegment(cell, seg int, prevActive []bool,
+	inc, dec float32) {
 
 	var perm float32
 	for i := range v.cells[cell].segments[seg].synapses {
@@ -123,33 +97,9 @@ func (v *V1) AdaptSegment(cell, seg int, prevActive []bool) {
 		// check if synapse.cell is in prevActive
 		switch prevActive[v.cells[cell].segments[seg].synapses[i].cell] {
 		case true:
-			perm += v.P.SynPermActiveMod
+			perm += inc
 		case false:
-			perm -= v.P.SynPermInactiveMod
-		}
-
-		// constrain perm to [0.0 : 1.0]
-		switch {
-		case perm < 0.0:
-			perm = 0.0
-		case perm > 1.0:
-			perm = 1.0
-		}
-
-		v.cells[cell].segments[seg].synapses[i].perm = perm
-	}
-}
-
-// PunishSegment will weaken synapses on a segment that are connected
-// to any cells active during the previous time step.
-func (v *V1) PunishSegment(cell, seg int, prevActive []bool) {
-	var perm float32
-	for i := range v.cells[cell].segments[seg].synapses {
-		perm = v.cells[cell].segments[seg].synapses[i].perm
-
-		// check if synapse.cell is in prevActive
-		if prevActive[v.cells[cell].segments[seg].synapses[i].cell] {
-			perm -= v.P.SynPermInactiveMod
+			perm -= dec
 		}
 
 		// constrain perm to [0.0 : 1.0]
@@ -166,7 +116,9 @@ func (v *V1) PunishSegment(cell, seg int, prevActive []bool) {
 
 // GrowSynapses grows new synapses on a segment to a randomly sampled
 // set of cells selected as winners in the previous time step.
-func (v *V1) GrowSynapses(cell, seg int, prevWinners []bool) {
+func (v *V1) GrowSynapses(cell, seg int, prevWinners []bool,
+	perm float32, newSyns int) {
+
 	// disable any candidates that are synapsed on this segment
 	for _, syn := range v.cells[cell].segments[seg].synapses {
 		prevWinners[syn.cell] = false
@@ -183,17 +135,17 @@ func (v *V1) GrowSynapses(cell, seg int, prevWinners []bool) {
 	// decide whether to sample or target all winner cells
 	var sample []int
 	switch {
-	case len(candidates) <= v.P.MaxNewSyns:
+	case len(candidates) <= newSyns:
 		// we use all
 		sample = rand.Perm(len(candidates))
-	case len(candidates) > v.P.MaxNewSyns:
+	case len(candidates) > newSyns:
 		// we permutate and slice how much we need
-		sample = rand.Perm(len(candidates))[:v.P.MaxNewSyns]
+		sample = rand.Perm(len(candidates))[:newSyns]
 	}
 
 	// grow new synapses
 	for i := range sample {
-		v.CreateSynapse(cell, seg, candidates[sample[i]])
+		v.CreateSynapse(cell, seg, candidates[sample[i]], perm)
 	}
 }
 
@@ -315,7 +267,8 @@ func (v *V1) BestMatchingSegForCol(col int) (int, int) {
 
 // ComputeActivity computes cell, segment, and synapse activity
 // in regards to currently active columns.
-func (v *V1) ComputeActivity(active []bool) {
+func (v *V1) ComputeActivity(active []bool, connected float32,
+	activeThreshold, matchThreshold int) {
 	/*
 		for each segment with activity >= ActiveThreshold
 		  mark segment active
@@ -339,7 +292,7 @@ func (v *V1) ComputeActivity(active []bool) {
 				// if the synapse corresponds to a cell in an active column
 				if active[syn.cell] {
 					// if synapse is connected
-					if syn.perm >= v.P.SynPermConnected {
+					if syn.perm >= connected {
 						live += 1
 					} else {
 						dead += 1
@@ -349,11 +302,11 @@ func (v *V1) ComputeActivity(active []bool) {
 
 			// set active / matching
 			switch {
-			case live >= v.P.ActiveThreshold:
+			case live >= activeThreshold:
 				v.cells[i].segments[j].active = true
 				v.cells[i].active += 1
 				fallthrough
-			case dead >= v.P.MatchingThreshold:
+			case dead >= matchThreshold:
 				v.cells[i].segments[j].matching = true
 				v.cells[i].matching += 1
 			}
@@ -399,10 +352,13 @@ func (v *V1) Clear() {
 		for j := range v.cells[i].segments {
 			v.cells[i].segments[j].active = false
 			v.cells[i].segments[j].matching = false
+			v.cells[i].segments[j].live = 0
+			v.cells[i].segments[j].dead = 0
 		}
 	}
 }
 
+// Counts stores the total number of segments and synapses in the region.
 func (v *V1) Counts() {
 	var nSegs, nSyns int
 

@@ -19,7 +19,7 @@ Further, I'm devoting attention to vision oriented problems and coordination of 
 - [x] Scalar Encoder
 - [x] Random Distributed Scalar Encoder
 - [x] Spatial Pooler
-- [ ] Temporal Memory
+- [x] Temporal Memory
 - [ ] Temporal Pooler
 - [ ] Classifier
 - [ ] Tests
@@ -48,3 +48,19 @@ Edge detect --> oriented edge detect -->
 
 ### Temporal memory
 - [ ] get anomaly score, data about current sequence state, etc
+- [ ] get some benchmark sequences for testing prediction accuracy, etc
+- [ ] figure out what to do when we hit the limit on cellular objects
+      more recent data is preferable, online learning...
+- [x] SynPermActiveMod == SynPermInactiveMod(0.05), and new SynPermPunishMod(0.01)
+
+## HTM Components
+### Encoder
+An encoder converts some quantity of sensory information into a semi-sparse vectorized representation for processing in HTM. Encoders should filter out any irrelevant information and only include relevant semantic information about the input in their output vector.
+
+### Spatial Pooler
+A spatial pooler converts a semi-sparse vector representation of some quantity of sensory information into a fixed sparsity vector. Every bit in the output vector should correspond to a column of cells in temporal memory.
+
+### Temporal Memory
+Temporal Memory learns variable order sequences.
+
+### Temporal Pooling

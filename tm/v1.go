@@ -11,22 +11,37 @@ import (
 type V1Params struct {
 	NumColumns  int // input space dimensions
 	CellsPerCol int // cells per column
-	SegsPerCell int
-	SynsPerSeg  int
+	SegsPerCell int // max segments per cell
+	SynsPerSeg  int // max synapses per segment
+
+	InitPerm         float32 // initial permanence of new synapses
+	SynPermConnected float32 // threshold for synapse to be deemed connected
+	SynPermLearnMod  float32 // permanence mod during learning
+	SynPermPunishMod float32 // permanence mod for incorrect prediction
+
+	MaxNewSyns      int // max new synapses per segment per iteration
+	ActiveThreshold int // threshold for segment to turn active
+	MatchThreshold  int // threshold for segment to turn matching
 }
 
 // NewV1Params returns a default V1Params.
 func NewV1Params() V1Params {
 	return V1Params{
-		NumColumns:  2048,
-		CellsPerCol: 32,
-		SegsPerCell: 256,
-		SynsPerSeg:  256,
+		NumColumns:       2048,
+		CellsPerCol:      24,
+		SegsPerCell:      16,
+		SynsPerSeg:       16,
+		InitPerm:         0.21,
+		SynPermConnected: 0.5,
+		SynPermLearnMod:  0.05,
+		SynPermPunishMod: 0.01,
+		MaxNewSyns:       12,
+		ActiveThreshold:  12,
+		MatchThreshold:   8,
 	}
 }
 
-// V1 is a TemporalMemory implementation with support
-// for basal and apical dendrites connected to other regions.
+// V1 is a basic implementation of TemporalMemory.
 type V1 struct {
 	P    V1Params
 	Cons cells.Cells
@@ -40,11 +55,12 @@ type V1 struct {
 
 // NewV1 initializes a new TemporalMemory region with the provided V1Params.
 func NewV1(p V1Params) *V1 {
-	cp := cells.NewV1Params()
-	cp.NumColumns = p.NumColumns
-	cp.CellsPerCol = p.CellsPerCol
-	cp.SegsPerCell = p.SegsPerCell
-	cp.SynsPerSeg = p.SynsPerSeg
+	cp := cells.V1Params{
+		NumColumns:  p.NumColumns,
+		CellsPerCol: p.CellsPerCol,
+		SegsPerCell: p.SegsPerCell,
+		SynsPerSeg:  p.SynsPerSeg,
+	}
 
 	return &V1{
 		P:               p,
@@ -68,17 +84,17 @@ func (e *V1) GetPrediction() []bool {
 // Compute iterates the TemporalMemory algorithm with the
 // provided vector of active columns from a SpatialPooler.
 func (e *V1) Compute(active []bool, learn bool) {
-	//e.Cons.Counts()
 	// Compute active / depolarized cells
 	e.activateCells(active, learn)
 
 	// Cleanup neural net
 	e.Cons.Cleanup()
-	//e.Cons.Counts()
+	e.Cons.Counts()
 
 	// Compute active & matching dendrite segments
 	e.Cons.Clear()
-	e.Cons.ComputeActivity(e.ActiveCells)
+	e.Cons.ComputeActivity(e.ActiveCells, e.P.SynPermConnected,
+		e.P.ActiveThreshold, e.P.MatchThreshold)
 
 	if learn {
 		e.iteration += 1
@@ -154,8 +170,10 @@ func (e *V1) activatePredictedColumn(col int, learn bool) []int {
 
 			if learn {
 				for j := range act {
-					e.Cons.AdaptSegment(i, act[j], e.PrevActiveCells)
-					e.Cons.GrowSynapses(i, act[j], e.PrevWinnerCells)
+					e.Cons.AdaptSegment(i, act[j], e.PrevActiveCells,
+						e.P.SynPermLearnMod, e.P.SynPermLearnMod)
+					e.Cons.GrowSynapses(i, act[j], e.PrevWinnerCells,
+						e.P.InitPerm, e.P.MaxNewSyns)
 				}
 			}
 		}
@@ -180,22 +198,24 @@ func (e *V1) burstColumn(col int, learn bool) ([]int, int) {
 	*/
 
 	cellsToAdd := e.Cons.CellsForCol(col)
-	var winnerCell int
-	var winnerSeg int
+	var winnerCell, winnerSeg int
 
 	segs := e.Cons.MatchingSegsForCol(col)
 	switch {
 	case segs > 0:
 		winnerCell, winnerSeg = e.Cons.BestMatchingSegForCol(col)
 		if learn {
-			e.Cons.AdaptSegment(winnerCell, winnerSeg, e.PrevActiveCells)
-			e.Cons.GrowSynapses(winnerCell, winnerSeg, e.PrevWinnerCells)
+			e.Cons.AdaptSegment(winnerCell, winnerSeg, e.PrevActiveCells,
+				e.P.SynPermLearnMod, e.P.SynPermLearnMod)
+			e.Cons.GrowSynapses(winnerCell, winnerSeg, e.PrevWinnerCells,
+				e.P.InitPerm, e.P.MaxNewSyns)
 		}
 	case segs == 0:
 		winnerCell = e.Cons.LeastSegsForCol(col)
 		if learn {
 			winnerSeg = e.Cons.CreateSegment(winnerCell)
-			e.Cons.GrowSynapses(winnerCell, winnerSeg, e.PrevWinnerCells)
+			e.Cons.GrowSynapses(winnerCell, winnerSeg, e.PrevWinnerCells,
+				e.P.InitPerm, e.P.MaxNewSyns)
 		}
 	}
 
@@ -212,7 +232,8 @@ func (e *V1) punishPredictedColumn(col int) {
 	for i := range cells {
 		segs := e.Cons.MatchingSegsForCell(cells[i])
 		for j := range segs {
-			e.Cons.PunishSegment(cells[i], segs[j], e.PrevActiveCells)
+			e.Cons.AdaptSegment(cells[i], segs[j], e.PrevActiveCells,
+				-e.P.SynPermPunishMod, 0.0)
 		}
 	}
 }

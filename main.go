@@ -38,9 +38,7 @@ func main() {
 	s := sp.NewV1(spar)
 	t := tm.NewV1(tm.NewV1Params())
 
-	start := time.Now()
-
-	n := 256
+	n := 32768
 	nn := 9
 	seq := make([][]int, n)
 	for i := 0; i < n; i++ {
@@ -50,18 +48,31 @@ func main() {
 		}
 	}
 
+	start := time.Now()
 	var v []bool
 	for i := range seq {
+
 		v = make([]bool, 0, e.Bits*9)
 		for j := range seq[i] {
 			v = append(v, e.Encode(seq[i][j])...)
 		}
-		v = s.Compute(v, false)
+		v = s.Compute(v, true)
 		t.Compute(v, true)
+
+		if i%512 == 0 {
+			elap := time.Since(start)
+
+			//fmt.Println()
+			per := float32(elap.Nanoseconds()) / float32(512) / 1000 / 1000
+			fmt.Println(512, "in", elap, "||", per, "ms per iteration")
+			fmt.Println(i, "so far")
+			//fmt.Println()
+
+			start = time.Now()
+		}
 	}
 
 	elap := time.Since(start)
-
 	per := float32(elap.Nanoseconds()) / float32(len(seq)) / 1000 / 1000
 	fmt.Println(len(seq), "in", elap, "||", per, "ms per iteration")
 
