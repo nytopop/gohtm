@@ -34,6 +34,29 @@ func Sparsity(s []bool) float64 {
 	return float64(sum / len(s))
 }
 
+// Overlap returns the overlap in bits of two bit vectors.
+func Overlap(a, b []bool) int {
+	var overlap int
+	for i := range a {
+		if a[i] == b[i] {
+			overlap++
+		}
+	}
+	return overlap
+}
+
+// Equal compares two bit vectors and returns true if they are equal,
+// false if not. Best case performance is faster than Overlap because
+// the function returns as soon as an inequality is detected.
+func Equal(a, b []bool) bool {
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // VectorUnion returns the union of all provided SparseBinaryVector.
 func VectorUnion(input ...SparseBinaryVector) SparseBinaryVector {
 	for _, root := range input {

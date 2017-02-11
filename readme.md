@@ -16,8 +16,10 @@ Further, I'm devoting attention to vision oriented problems and coordination of 
 ## Roadmap
 
 - [x] Encoder Base
-- [x] Scalar Encoder
-- [x] Random Distributed Scalar Encoder
+- [x] Scalar encoder
+- [ ] Audio encoder
+- [ ] Vision encoder
+- [ ] Random distributed scalar encoder
 - [x] Spatial Pooler
 - [x] Temporal Memory
 - [ ] Temporal Pooler
@@ -27,22 +29,14 @@ Further, I'm devoting attention to vision oriented problems and coordination of 
 
 ## Experiments & research directions
 
-### Async processing
-
-If we can simulate each neuron in its own goroutine, this should simplify overall algorithmic processing. With fixed sparsity (0.02) representations, a reactive, event driven processing model should radically lower the CPU cost of iterating the algorithm - as each neuron will only be process inputs/outputs if it is signalled by some other neuron.
-
-In this model, each cell has a single broadcast channel, which other cells can connect to to receive messages. If synaptic weight is high enough to be connected, messages are successfully processed by the postsynaptic cell.
-
 ### Networks
 - [ ] Spec out a network definition language. Code generation? 
 - [ ] First in Last out stack for processing
 
 ### Temporal memory
-- [ ] get anomaly score, data about current sequence state, etc
 - [ ] get some benchmark sequences for testing prediction accuracy, etc
-- [ ] figure out what to do when we hit the limit on cellular objects
-      more recent data is preferable, online learning...
-- [x] SynPermActiveMod == SynPermInactiveMod(0.05), and new SynPermPunishMod(0.01)
+- [ ] figure out what to do when we hit the limit on cellular objects. More recent data is preferable, online learning and all...
+- [ ] fix the anomaly calculation
 
 ## HTM Components
 ### Encoder
@@ -54,4 +48,5 @@ A spatial pooler converts a semi-sparse vector representation of some quantity o
 ### Temporal Memory
 Temporal Memory learns variable order sequences.
 
-### Temporal Pooling
+### Temporal Pooler
+### Classifier
