@@ -2,6 +2,7 @@
 // building, linking, and managing regions.
 package network
 
+// Network asdf
 type Network interface {
 	Serialize() []byte
 }

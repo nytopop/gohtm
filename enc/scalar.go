@@ -26,6 +26,8 @@ type Scalar struct {
 	Range int
 }
 
+// NewScalar returns a Scalar encoder initialiazed with the provided
+// ScalarParams.
 func NewScalar(p ScalarParams) *Scalar {
 	return &Scalar{
 		P:     p,
@@ -34,6 +36,7 @@ func NewScalar(p ScalarParams) *Scalar {
 	}
 }
 
+// Encode asdf
 func (s *Scalar) Encode(d interface{}) []bool {
 	out := make([]bool, s.Bits)
 	i := s.P.Buckets * (d.(int) - s.P.Min) / s.Range
@@ -49,6 +52,7 @@ func (s *Scalar) Encode(d interface{}) []bool {
 	return out
 }
 
+// Decode asdf
 func (s *Scalar) Decode(sv []bool) interface{} {
 	for i, v := range sv {
 		if v {

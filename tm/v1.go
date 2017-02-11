@@ -1,12 +1,8 @@
 package tm
 
-import (
-	"fmt"
+import "github.com/nytopop/gohtm/cells"
 
-	"github.com/nytopop/gohtm/cells"
-)
-
-// V1Params contains parameters for initialization of an Extended
+// V1Params contains parameters for initialization of a V1
 // TemporalMemory region.
 type V1Params struct {
 	NumColumns  int // input space dimensions
@@ -33,11 +29,11 @@ func NewV1Params() V1Params {
 		SynsPerSeg:       16,
 		InitPerm:         0.21,
 		SynPermConnected: 0.5,
-		SynPermLearnMod:  0.05,
+		SynPermLearnMod:  0.1,
 		SynPermPunishMod: 0.01,
-		MaxNewSyns:       12,
-		ActiveThreshold:  12,
-		MatchThreshold:   8,
+		MaxNewSyns:       16,
+		ActiveThreshold:  8,
+		MatchThreshold:   6,
 	}
 }
 
@@ -50,7 +46,11 @@ type V1 struct {
 	PrevWinnerCells []bool
 	ActiveCells     []bool
 	WinnerCells     []bool
-	iteration       int
+
+	anomaly      float64
+	prediction   []bool
+	nSegs, nSyns int
+	iteration    int
 }
 
 // NewV1 initializes a new TemporalMemory region with the provided V1Params.
@@ -73,23 +73,19 @@ func NewV1(p V1Params) *V1 {
 	}
 }
 
-// GetPrediction returns the predicted input for the next time step.
-func (e *V1) GetPrediction() []bool {
-	for i := 0; i < e.P.NumColumns; i++ {
-		fmt.Println(i)
-	}
-	return []bool{}
-}
-
 // Compute iterates the TemporalMemory algorithm with the
 // provided vector of active columns from a SpatialPooler.
 func (e *V1) Compute(active []bool, learn bool) {
+	// Compute prediction, anomaly, stats
+	e.prediction = e.Cons.ComputePredictedCols()
+	e.computeAnomalyScore(active)
+	e.nSegs, e.nSyns = e.Cons.ComputeStats()
+
 	// Compute active / depolarized cells
 	e.activateCells(active, learn)
 
 	// Cleanup neural net
 	e.Cons.Cleanup()
-	e.Cons.Counts()
 
 	// Compute active & matching dendrite segments
 	e.Cons.Clear()
@@ -97,7 +93,7 @@ func (e *V1) Compute(active []bool, learn bool) {
 		e.P.ActiveThreshold, e.P.MatchThreshold)
 
 	if learn {
-		e.iteration += 1
+		e.iteration++
 		e.Cons.StartNewIteration()
 	}
 }
@@ -246,4 +242,40 @@ func (e *V1) Reset() {
 	e.PrevWinnerCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
 	e.ActiveCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
 	e.WinnerCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
+}
+
+func (e *V1) computeAnomalyScore(active []bool) {
+	/*
+		1. Confidences (soft match count)
+			for each column
+				get the number of active synapses, live || dead
+		2. Predicted cells (hard match count)
+			normalized count of how many columns active and not predicted
+			in the previous time step.
+	*/
+	var activeC, predictedC int
+	for i := range active {
+		if active[i] {
+			activeC++
+			if e.prediction[i] {
+				predictedC++
+			}
+		}
+	}
+	e.anomaly = 1 - (float64(predictedC) / float64(activeC))
+}
+
+// GetAnomalyScore returns the current normalized anomaly score.
+func (e *V1) GetAnomalyScore() float64 {
+	return e.anomaly
+}
+
+// GetPrediction returns the current set of depolarized columns.
+func (e *V1) GetPrediction() []bool {
+	return e.prediction
+}
+
+// GetStats returns the current number of segments and synapses.
+func (e *V1) GetStats() (int, int) {
+	return e.nSegs, e.nSyns
 }

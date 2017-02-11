@@ -12,10 +12,9 @@ type V1Params struct {
 
 // V1 cellular state interface.
 type V1 struct {
-	P            V1Params
-	cells        []V1Cell
-	iteration    int
-	nSegs, nSyns int
+	P         V1Params
+	cells     []V1Cell
+	iteration int
 }
 
 // NewV1 returns a new V1 instance, initialized according to provided params.
@@ -50,6 +49,9 @@ type V1Synapse struct {
 	perm float32
 }
 
+// CreateSegment spawns a new segment on the specified cell. If the number
+// of segments that already exist on the cell is greater than SegsPerCell,
+// the oldest or least used segment is removed and the new segment appended.
 func (v *V1) CreateSegment(cell int) int {
 	if len(v.cells[cell].segments) < v.P.SegsPerCell {
 		v.cells[cell].segments = append(
@@ -59,13 +61,18 @@ func (v *V1) CreateSegment(cell int) int {
 				matching: false,
 				synapses: make([]V1Synapse, 0)})
 	} else {
-		// BUG :: how do we handle this?
+		// TODO :: how do we handle this?
+		//         remove the oldest / least recent segment
 		//	fmt.Println("too many segments on cell")
 	}
 
 	return len(v.cells[cell].segments) - 1
 }
 
+// CreateSynapse spawns a new synapse on the specified segment / cell. If the
+// number of synapses that already exist on the segment exceeds SynsPerSeg,
+// the synapse with the lowest permanence value is removed and the new
+// synapse is appended.
 func (v *V1) CreateSynapse(cell, seg, target int, perm float32) {
 	for i := range v.cells[cell].segments[seg].synapses {
 		if v.cells[cell].segments[seg].synapses[i].cell == target {
@@ -80,7 +87,8 @@ func (v *V1) CreateSynapse(cell, seg, target int, perm float32) {
 				cell: target,
 				perm: perm})
 	} else {
-		// BUG :: how do we handle this?
+		// TODO :: how do we handle this?
+		//         delete the least perm / least used synapse
 		//		fmt.Println("too many synapses on segment")
 	}
 }
@@ -205,9 +213,9 @@ func (v *V1) MatchingSegsForCol(col int) int {
 	return syns
 }
 
-// LeastMatchingSegsForCol returns the cell index with the
-// least number of matching segments. If there is a tie, a
-// random selection is made from the tie candidates.
+// LeastSegsForCol returns the cell index with the least number
+// of matching segments. If there is a tie, a random selection
+// is made from the tie candidates.
 func (v *V1) LeastSegsForCol(col int) int {
 	cells := v.CellsForCol(col)
 
@@ -220,7 +228,8 @@ func (v *V1) LeastSegsForCol(col int) int {
 	}
 
 	// tie breaker
-	minCells := make([]int, 0)
+	//	minCells := make([]int, 0)
+	var minCells []int
 	for i := range cells {
 		if len(v.cells[cells[i]].segments) == min {
 			minCells = append(minCells, cells[i])
@@ -293,9 +302,9 @@ func (v *V1) ComputeActivity(active []bool, connected float32,
 				if active[syn.cell] {
 					// if synapse is connected
 					if syn.perm >= connected {
-						live += 1
+						live++
 					} else {
-						dead += 1
+						dead++
 					}
 				}
 			}
@@ -304,16 +313,15 @@ func (v *V1) ComputeActivity(active []bool, connected float32,
 			switch {
 			case live >= activeThreshold:
 				v.cells[i].segments[j].active = true
-				v.cells[i].active += 1
+				v.cells[i].active++
 				fallthrough
 			case dead >= matchThreshold:
 				v.cells[i].segments[j].matching = true
-				v.cells[i].matching += 1
+				v.cells[i].matching++
 			}
 			v.cells[i].segments[j].live = live
 			v.cells[i].segments[j].dead = dead
 		}
-
 	}
 }
 
@@ -358,21 +366,34 @@ func (v *V1) Clear() {
 	}
 }
 
-// Counts stores the total number of segments and synapses in the region.
-func (v *V1) Counts() {
-	var nSegs, nSyns int
+// StartNewIteration increments the iteration counter.
+func (v *V1) StartNewIteration() {
+	v.iteration++
+}
 
+// ComputePredictedCols computes which columns contain
+// depolarized cells and returns them.
+func (v *V1) ComputePredictedCols() []bool {
+	prediction := make([]bool, v.P.NumColumns)
+	for i := range prediction {
+		for _, j := range v.CellsForCol(i) {
+			if v.cells[j].active > 0 {
+				prediction[i] = true
+				break
+			}
+		}
+	}
+	return prediction
+}
+
+// ComputeStats returns the total number of segments and synapses.
+func (v *V1) ComputeStats() (int, int) {
+	var nSegs, nSyns int
 	for i := range v.cells {
 		for j := range v.cells[i].segments {
 			nSegs++
 			nSyns += len(v.cells[i].segments[j].synapses)
 		}
 	}
-
-	v.nSegs, v.nSyns = nSegs, nSyns
-}
-
-// StartNewIteration increments the iteration counter.
-func (v *V1) StartNewIteration() {
-	v.iteration += 1
+	return nSegs, nSyns
 }

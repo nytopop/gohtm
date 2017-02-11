@@ -7,7 +7,7 @@ package tm
 type TemporalMemory interface {
 	Compute(active []bool, learn bool)
 	Reset()
-	GetAnomaly()
-	GetPrediction() []bool
-	GetState()
+	GetAnomalyScore() (anomaly float64)
+	GetPrediction() (prediction []bool)
+	GetStats() (segments, synapses int)
 }

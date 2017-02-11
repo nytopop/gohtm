@@ -5,14 +5,17 @@ package enc
 type AudioEncoder struct {
 }
 
+// NewAudioEncoder asdf
 func NewAudioEncoder() *AudioEncoder {
 	return &AudioEncoder{}
 }
 
+// Encode asdf
 func (a *AudioEncoder) Encode(d interface{}) []bool {
 	return []bool{}
 }
 
+// Decode asdf
 func (a *AudioEncoder) Decode(sv []bool) interface{} {
 	return 0
 }

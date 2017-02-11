@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"runtime/pprof"
 	"time"
@@ -34,39 +33,40 @@ func main() {
 	// Temporal Memory Test
 	e := enc.NewScalar(enc.NewScalarParams())
 	spar := sp.NewV1Params()
-	spar.NumInputs = e.Bits * 9
+	spar.NumInputs = e.Bits
 	s := sp.NewV1(spar)
 	t := tm.NewV1(tm.NewV1Params())
 
-	n := 32768
-	nn := 9
-	seq := make([][]int, n)
-	for i := 0; i < n; i++ {
-		seq[i] = make([]int, nn)
-		for j := 0; j < nn; j++ {
-			seq[i][j] = rand.Intn(64)
+	seq := make([][]int, 128)
+	for i := range seq {
+		seq[i] = make([]int, 13)
+		for j := range seq[i] {
+			seq[i][j] = j * 5
 		}
 	}
 
 	start := time.Now()
 	var v []bool
 	for i := range seq {
+		//fmt.Println()
 
-		v = make([]bool, 0, e.Bits*9)
+		var anom float64
 		for j := range seq[i] {
-			v = append(v, e.Encode(seq[i][j])...)
+			v = e.Encode(seq[i][j])
+			v = s.Compute(v, true)
+			t.Compute(v, true)
+			anom += t.GetAnomalyScore()
 		}
-		v = s.Compute(v, true)
-		t.Compute(v, true)
+		anom /= float64(len(seq[i]))
+		fmt.Println("Avg anomaly score:", anom)
+		//t.Reset()
 
 		if i%512 == 0 {
 			elap := time.Since(start)
 
-			//fmt.Println()
 			per := float32(elap.Nanoseconds()) / float32(512) / 1000 / 1000
 			fmt.Println(512, "in", elap, "||", per, "ms per iteration")
 			fmt.Println(i, "so far")
-			//fmt.Println()
 
 			start = time.Now()
 		}

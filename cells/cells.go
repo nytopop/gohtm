@@ -25,6 +25,8 @@ type Cells interface {
 		activeThreshold, matchThreshold int)
 	Cleanup()
 	Clear()
-	Counts()
 	StartNewIteration()
+
+	ComputePredictedCols() []bool
+	ComputeStats() (int, int)
 }

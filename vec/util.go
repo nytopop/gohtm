@@ -5,9 +5,7 @@ import (
 	"sort"
 )
 
-/* Utility functions */
-
-/* Check if []int s contains int s. Returns true if yes. */
+// ContainsInt returns true if s contains n.
 func ContainsInt(n int, s []int) bool {
 	for _, v := range s {
 		if n == v {
@@ -17,15 +15,9 @@ func ContainsInt(n int, s []int) bool {
 	return false
 }
 
-/* Return slice of n random integers, up to max size. All integers returned will be unique, that is, there should be no duplicates in the returned slice. */
-func UniqueRandInts(n, max int) (rnd []int) {
-	for len(rnd) < n {
-		r := rand.Intn(max)
-		if !ContainsInt(r, rnd) {
-			rnd = append(rnd, r)
-		}
-	}
-	return
+// UniqueRandInts returns n random integers up to max.
+func UniqueRandInts(n, max int) []int {
+	return rand.Perm(max)[:n]
 }
 
 // indice sortable slice
@@ -50,14 +42,16 @@ func newSlice(ints []int) *slice {
 	return s
 }
 
-/* Sorts the input slice in ascending order, and returns the indices of the original slice in sorted order. */
+// SortIndices sorts data in ascending order and returns the indices of the
+// original unsorted slice in now sorted order.
+// SortIndices([]int{16, 8, 4, 2, 1}) returns []int{4, 3, 2, 1, 0}
 func SortIndices(data []int) []int {
 	sorted := newSlice(data)
 	sort.Sort(sorted)
 	return sorted.idx
 }
 
-/* Returns a reversed version of the input slice. */
+// Reverse reverses and returns data.
 func Reverse(data []int) []int {
 	for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
 		data[i], data[j] = data[j], data[i]

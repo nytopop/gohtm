@@ -33,15 +33,6 @@ If we can simulate each neuron in its own goroutine, this should simplify overal
 
 In this model, each cell has a single broadcast channel, which other cells can connect to to receive messages. If synaptic weight is high enough to be connected, messages are successfully processed by the postsynaptic cell.
 
-### Vision / Audio
-- [ ] Figure out how to code for intensity
-
-pixel (r, g, b) --> [00000111]
-
-hierarchy layers
-Edge detect --> oriented edge detect --> 
-
-
 ### Networks
 - [ ] Spec out a network definition language. Code generation? 
 - [ ] First in Last out stack for processing

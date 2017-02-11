@@ -16,6 +16,12 @@ Takes a single input frame, and outputs a [][]bool with the right overlap proper
 
 Edge detection is performed on the input frame before sectorizing.
 
+Pixel --> 'Edginess' --> 0-32 Scalar Encoder -->
+
+1. Edge detection
+2. Vectorization
+3.
+
 */
 
 // Retina encodes images as SDRs, inspired by the encoding properties
@@ -24,6 +30,7 @@ type Retina struct {
 	X, Y int // input dimensions
 }
 
+// NewRetina asdf
 func NewRetina(x, y int) *Retina {
 	return &Retina{
 		X: x,
@@ -31,14 +38,17 @@ func NewRetina(x, y int) *Retina {
 	}
 }
 
+// Encode asdf
 func (r *Retina) Encode(f interface{}) []bool {
 	return []bool{}
 }
 
+// Decode asdf
 func (r *Retina) Decode(sv []bool) interface{} {
 	return 0
 }
 
+// Size asdf
 func (r *Retina) Size() {
 	/* sizing
 	assert(fieldsize % sectorsize == 0 || boxSize)
