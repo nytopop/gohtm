@@ -45,7 +45,7 @@ func NewV1(p V1Params) *V1 {
 // Associate takes an input of the currently active columns from a
 // SpatialPooler and the output vector from an Encoder, then stores
 // them in the internal database.
-func (c *V1) Store(active, vector []bool) {
+func (c *V1) Associate(active, vector []bool) {
 	/* Duplicate detection
 	Each SDR should be unique.
 	Each InputVector may be associated with multiple SDRs.
@@ -71,7 +71,7 @@ func (c *V1) Store(active, vector []bool) {
 	// either the association was already stored, or
 	// an illegal entry is being made
 	for i := range c.entries {
-		if vec.Equal(v.entries[i].SDR, active) {
+		if vec.Equal(c.entries[i].SDR, active) {
 			return
 		}
 	}

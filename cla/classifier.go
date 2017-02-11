@@ -31,6 +31,6 @@ count how many synapses are active/matching for confidence value
 
 // Classifier asdf
 type Classifier interface {
-	Store(active, vector []bool)
+	Associate(active, vector []bool)
 	Classify(prediction []bool)
 }
