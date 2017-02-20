@@ -1,24 +1,6 @@
 package vec
 
-import (
-	"math/rand"
-	"sort"
-)
-
-// ContainsInt returns true if s contains n.
-func ContainsInt(n int, s []int) bool {
-	for _, v := range s {
-		if n == v {
-			return true
-		}
-	}
-	return false
-}
-
-// UniqueRandInts returns n random integers up to max.
-func UniqueRandInts(n, max int) []int {
-	return rand.Perm(max)[:n]
-}
+import "sort"
 
 // indice sortable slice
 type slice struct {

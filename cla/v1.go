@@ -21,26 +21,25 @@ type V1 struct {
 	entries V1Sortable
 }
 
+// NewV1 returns a new V1 Classifier initialized with the provided V1Params.
+func NewV1(p V1Params) *V1 {
+	return &V1{
+		P: p,
+	}
+}
+
 // V1Entry represents a single entry in the classifier. The Overlap value
 // is only populated on return from the (v *V1) Classify() method.
 type V1Entry struct {
 	Overlap     int // This is only populated on return values
-	InputVector []bool
-	SDR         []bool
+	InputVector []int
+	SDR         []int
 }
 type V1Sortable []V1Entry
 
 func (v V1Sortable) Len() int           { return len(v) }
 func (v V1Sortable) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
 func (v V1Sortable) Less(i, j int) bool { return v[i].Overlap < v[j].Overlap }
-
-// NewV1 returns a new V1 Classifier initialized according to the
-// provided V1Params.
-func NewV1(p V1Params) *V1 {
-	return &V1{
-		P: p,
-	}
-}
 
 // Associate takes an input of the currently active columns from a
 // SpatialPooler and the output vector from an Encoder, then stores
@@ -67,29 +66,33 @@ func (c *V1) Associate(active, vector []bool) {
 	representing.
 	*/
 
+	// convert []bool to []int
+	vectorInts, activeInts := vec.ToInt(vector), vec.ToInt(active)
+
 	// return without storing if active is a duplicate
-	// either the association was already stored, or
-	// an illegal entry is being made
 	for i := range c.entries {
-		if vec.Equal(c.entries[i].SDR, active) {
+		if vec.Equal(c.entries[i].SDR, activeInts) {
 			return
 		}
 	}
 
 	// append a new entry
 	c.entries = append(c.entries, V1Entry{
-		InputVector: vector,
-		SDR:         active})
+		InputVector: vectorInts,
+		SDR:         activeInts})
 }
 
 // Classify searches for any SDRs that overlap with prediction, looks
 // up the associated input vectors, and outputs them sorted by overlap
 // amount. Only SDRs that overlap are returned.
 func (c *V1) Classify(prediction []bool) V1Sortable {
+	// convert []bool to []int
+	predictionInts := vec.ToInt(prediction)
+
 	// search for overlapping SDRs
 	var output V1Sortable
 	for i := range c.entries {
-		overlap := vec.Overlap(prediction, c.entries[i].SDR)
+		overlap := vec.Overlap(predictionInts, c.entries[i].SDR)
 		if overlap > 0 {
 			entry := V1Entry{
 				Overlap:     overlap,

@@ -1,95 +1,82 @@
 package enc
 
 import (
+	"math"
 	"math/rand"
-	"reflect"
-	"sort"
 
 	"github.com/nytopop/gohtm/vec"
 )
 
-// RDScalarEncoder is an implementation of a random distributed scalar
-// encoder. Scalar values are mapped to buckets, which are randomly
-// assigned to groups of bits in the output space. Requires persistent
-// state.
-type RDScalarEncoder struct {
-	n, w    int
-	r       float64
-	buckets map[int][]int
+// RDScalar implements a random distributed scalar encoder.
+type RDScalar struct {
+	n      uint32   // size of output vector
+	w      int      // number of active bits
+	r      float64  // resolution
+	series []uint32 // pseudorandom, non-repeating series
 }
 
-// NewRDScalarEncoder returns a new RDScalarEncoder with the supplied
-// parameters. n denotes the size of the output vector, w denotes how
-// many bits should be active for an encoded scalar value. r denotes
-// the resolution of the encoder; setting r to 1 will produce a bucket
-// for every interval of 1 in the input space.
-func NewRDScalarEncoder(n, w int, r float64) *RDScalarEncoder {
-	return &RDScalarEncoder{
-		n:       n,
-		w:       w,
-		r:       r,
-		buckets: map[int][]int{},
+// NewRDScalar initializes an RDScalar encoder.
+func NewRDScalar(n uint32, w int, r float64) *RDScalar {
+	return &RDScalar{
+		n: n,
+		w: w,
+		r: r,
 	}
 }
 
-// Encode encodes a scalar value and returns a SparseBinaryVector.
-// The provided scalar value must be float64.
-func (rdse *RDScalarEncoder) Encode(s interface{}) vec.SparseBinaryVector {
-	b := int(s.(float64) / rdse.r)
-	if _, ok := rdse.buckets[b]; !ok {
-		rdse.newBucket(b)
+// Encode encodes a float value to a bit vector.
+func (r *RDScalar) Encode(s interface{}) []bool {
+	// ensure we get a float64
+	if _, ok := s.(float64); !ok {
+		panic("RDScalar did not receive float64 input value!")
 	}
 
-	sv := vec.NewSparseBinaryVector(rdse.n)
-	for _, v := range rdse.buckets[b] {
-		sv.Set(v, true)
+	// calculate bucket value
+	rb := s.(float64) / r.r
+	dif := rb - float64(int(rb))
+
+	// round up / down for bucket switchover at .5
+	var b int
+	switch {
+	case dif >= 0.5:
+		b = int(math.Ceil(rb))
+	case dif < 0.5:
+		b = int(math.Floor(rb))
 	}
 
-	return sv
+	// create bucket if it doesn't exist
+	if len(r.series) < b+r.w {
+		r.extendSeries(b)
+	}
+
+	// return the bucket
+	return vec.ToBool32(r.series[b:b+r.w], r.n)
 }
 
-func (rdse *RDScalarEncoder) newBucket(b int) {
-	for i := 0; i <= b; i++ {
-		if _, ok := rdse.buckets[i]; !ok {
-			rdse.buckets[i] = jank(i, rdse.n, rdse.w)
-			sort.Ints(rdse.buckets[i])
+func (r *RDScalar) extendSeries(b int) {
+	// calc # of new entries
+	n := (b + r.w) - len(r.series)
+	for i := 0; i < n; i++ {
+		// get subset of last w+1 elems in series
+		idx := len(r.series) - r.w - 2
+		if idx < 0 {
+			idx = 0
 		}
-	}
-}
+		subset := r.series[idx:]
 
-// Decode decodes the provided SparseBinaryVector back into a scalar
-// value. If decoding fails, 0.0 is returned.
-func (rdse *RDScalarEncoder) Decode(s vec.SparseBinaryVector) interface{} {
-	for k, v := range rdse.buckets {
-		if reflect.DeepEqual(v, s.X) {
-			return float64(k) * rdse.r
-		}
-	}
-	return 0.0
-}
-
-// Literally the worst algorithm in the known universe.
-func jank(n, max, w int) []int {
-	out := []int{}
-	// loop until successful
-	for seed := 0; len(out) < w; seed++ {
-		out = []int{}
-
-		for i := 0; i < w; i++ {
-			t := fakeHash(n+i, max, seed)
-			if !vec.ContainsInt(t, out) {
-				out = append(out, t)
+		// find random value not in subset
+		var rVal int
+		for {
+			rVal = rand.Intn(int(r.n))
+			if !vec.Contains32(subset, uint32(rVal)) {
+				break
 			}
 		}
-	}
 
-	return out
+		r.series = append(r.series, uint32(rVal))
+	}
 }
 
-func fakeHash(n, max, seed int) int {
-	rand.Seed(int64(seed))
-	for i := 0; i < n; i++ {
-		rand.Intn(max)
-	}
-	return rand.Intn(max)
+func (r *RDScalar) Buckets() int {
+	return len(r.series) - r.w
 }

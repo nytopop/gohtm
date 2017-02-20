@@ -143,7 +143,7 @@ func (sp *V1) mapPotential(col int) {
 
 	nbs := sp.getInputNeighbors(center)
 	n := int(float64(len(nbs)) * sp.P.PotentialPct)
-	sample := vec.UniqueRandInts(n, len(nbs))
+	sample := rand.Perm(len(nbs))[:n]
 
 	sp.cols[col].psyns = make([]proximalSynapse, len(sample))
 	for i, j := range sample {

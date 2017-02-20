@@ -31,6 +31,8 @@ count how many synapses are active/matching for confidence value
 
 // Classifier asdf
 type Classifier interface {
-	Associate(active, vector []bool)
-	Classify(prediction []bool)
+	/*	Associate(active, vector []bool)
+		Classify(prediction []bool) V1Sortable // this needs to change
+	*/
+	Compute(sdr []int, actValue int, learn, infer bool) V2Results
 }

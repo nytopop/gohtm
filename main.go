@@ -7,10 +7,13 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"github.com/nytopop/gohtm/enc"
-	"github.com/nytopop/gohtm/sp"
-	"github.com/nytopop/gohtm/tm"
+	"github.com/nytopop/gohtm/region"
 )
+
+func timeTrack(t time.Time, name string) {
+	elapsed := time.Since(t)
+	fmt.Printf("%s took %s\n", name, elapsed)
+}
 
 func main() {
 	// Start CPU profiler
@@ -18,11 +21,24 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	defer f.Close()
 
 	if err := pprof.StartCPUProfile(f); err != nil {
 		log.Fatalln(err)
 	}
 	defer pprof.StopCPUProfile()
+
+	rpar := region.NewV1Params()
+	r := region.NewV1(rpar)
+
+	var v region.V1Result
+	for i := 0; i < 32; i++ {
+		defer timeTrack(time.Now(), "9 entries")
+		for j := 0; j < 9; j++ {
+			fmt.Println(v.AnomalyScore)
+			v = r.Compute(j*5, true)
+		}
+	}
 
 	// RETINA
 	/*
@@ -31,50 +47,52 @@ func main() {
 	*/
 
 	// Temporal Memory Test
-	e := enc.NewScalar(enc.NewScalarParams())
-	spar := sp.NewV1Params()
-	spar.NumInputs = e.Bits
-	s := sp.NewV1(spar)
-	t := tm.NewV1(tm.NewV1Params())
+	/*
+		e := enc.NewScalar(enc.NewScalarParams())
+		spar := sp.NewV1Params()
+		spar.NumInputs = e.Bits
+		s := sp.NewV1(spar)
+		t := tm.NewV1(tm.NewV1Params())
 
-	seq := make([][]int, 128)
-	for i := range seq {
-		seq[i] = make([]int, 13)
-		for j := range seq[i] {
-			seq[i][j] = j * 5
+		seq := make([][]int, 128)
+		for i := range seq {
+			seq[i] = make([]int, 13)
+			for j := range seq[i] {
+				seq[i][j] = j * 5
+			}
 		}
-	}
 
-	start := time.Now()
-	var v []bool
-	for i := range seq {
-		//fmt.Println()
+		start := time.Now()
+		var v []bool
+		for i := range seq {
+			//fmt.Println()
 
-		var anom float64
-		for j := range seq[i] {
-			v = e.Encode(seq[i][j])
-			v = s.Compute(v, true)
-			t.Compute(v, true)
-			anom += t.GetAnomalyScore()
+			var anom float64
+			for j := range seq[i] {
+				v = e.Encode(seq[i][j])
+				v = s.Compute(v, true)
+				t.Compute(v, true)
+				anom += t.GetAnomalyScore()
+			}
+			anom /= float64(len(seq[i]))
+			fmt.Println("Avg anomaly score:", anom)
+			//t.Reset()
+
+			if i%512 == 0 {
+				elap := time.Since(start)
+
+				per := float32(elap.Nanoseconds()) / float32(512) / 1000 / 1000
+				fmt.Println(512, "in", elap, "||", per, "ms per iteration")
+				fmt.Println(i, "so far")
+
+				start = time.Now()
+			}
 		}
-		anom /= float64(len(seq[i]))
-		fmt.Println("Avg anomaly score:", anom)
-		//t.Reset()
 
-		if i%512 == 0 {
-			elap := time.Since(start)
-
-			per := float32(elap.Nanoseconds()) / float32(512) / 1000 / 1000
-			fmt.Println(512, "in", elap, "||", per, "ms per iteration")
-			fmt.Println(i, "so far")
-
-			start = time.Now()
-		}
-	}
-
-	elap := time.Since(start)
-	per := float32(elap.Nanoseconds()) / float32(len(seq)) / 1000 / 1000
-	fmt.Println(len(seq), "in", elap, "||", per, "ms per iteration")
+		elap := time.Since(start)
+		per := float32(elap.Nanoseconds()) / float32(len(seq)) / 1000 / 1000
+		fmt.Println(len(seq), "in", elap, "||", per, "ms per iteration")
+	*/
 
 	// Spatial pooler speed test
 	/*

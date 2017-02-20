@@ -28,10 +28,15 @@ Further, I'm devoting attention to vision oriented problems and coordination of 
 - [ ] Visualization
 
 ## Experiments & research directions
-
 ### Networks
 - [ ] Spec out a network definition language. Code generation? 
 - [ ] First in Last out stack for processing
+
+### Spatial Pooler
+- [ ] Needs fixing, probably a rewrite of the whole thing
+- [ ] Make tests to verify proper behavior of pooling
+
+	bit distribution, randomness, uniformity, etc
 
 ### Temporal memory
 - [ ] get some benchmark sequences for testing prediction accuracy, etc

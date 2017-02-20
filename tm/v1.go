@@ -1,6 +1,9 @@
 package tm
 
-import "github.com/nytopop/gohtm/cells"
+import (
+	"github.com/nytopop/gohtm/cells"
+	"github.com/nytopop/gohtm/vec"
+)
 
 // V1Params contains parameters for initialization of a V1
 // TemporalMemory region.
@@ -263,6 +266,12 @@ func (e *V1) computeAnomalyScore(active []bool) {
 		}
 	}
 	e.anomaly = 1 - (float64(predictedC) / float64(activeC))
+}
+
+// GetActiveCells returns the currently active cells, in []int
+// format.
+func (e *V1) GetActiveCells() []int {
+	return vec.ToInt(e.ActiveCells)
 }
 
 // GetAnomalyScore returns the current normalized anomaly score.
