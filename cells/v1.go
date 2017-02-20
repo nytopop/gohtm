@@ -285,13 +285,6 @@ func (v *V1) ComputeActivity(active []bool, connected float32,
 		  mark segment matching
 	*/
 
-	act := make([]int, 0, 48)
-	for i := range active {
-		if active[i] {
-			act = append(act, i)
-		}
-	}
-
 	for i := range v.cells {
 		for j := range v.cells[i].segments {
 			// count live synapses on each segment
