@@ -9,18 +9,21 @@ import (
 
 // RDScalar implements a random distributed scalar encoder.
 type RDScalar struct {
-	n      uint32   // size of output vector
-	w      int      // number of active bits
-	r      float64  // resolution
-	series []uint32 // pseudorandom, non-repeating series
+	n          uint32  // size of output vector
+	w          int     // number of active bits
+	r          float64 // resolution
+	maxOverlap int
+	series     []uint32 // pseudorandom, non-repeating series
 }
 
 // NewRDScalar initializes an RDScalar encoder.
-func NewRDScalar(n uint32, w int, r float64) *RDScalar {
+func NewRDScalar(n uint32, w, o int, r float64) *RDScalar {
 	return &RDScalar{
-		n: n,
-		w: w,
-		r: r,
+		n:          n,
+		w:          w,
+		r:          r,
+		maxOverlap: o,
+		series:     make([]uint32, 0),
 	}
 }
 
@@ -62,21 +65,64 @@ func (r *RDScalar) extendSeries(b int) {
 		if idx < 0 {
 			idx = 0
 		}
-		subset := r.series[idx:]
 
 		// find random value not in subset
-		var rVal int
+		var rVal uint32
 		for {
-			rVal = rand.Intn(int(r.n))
-			if !vec.Contains32(subset, uint32(rVal)) {
-				break
+			// get random number from [0 : r.n]
+			rVal = uint32(rand.Intn(int(r.n)))
+
+			// ensure number isn't a duplicate from subset
+			if !vec.Contains32(r.series[idx:], rVal) {
+				// ensure non-adjescent buckets don't overlap
+				if r.isValidBucket(idx, rVal) {
+					break
+				}
 			}
 		}
-
-		r.series = append(r.series, uint32(rVal))
+		r.series = append(r.series, rVal)
 	}
 }
 
+func (r *RDScalar) isValidBucket(b int, newVal uint32) bool {
+	if len(r.series) < r.w {
+		return true
+	}
+
+	if r.maxOverlap == 0 {
+		return true
+	}
+
+	bucket := r.series[b : b+r.w-1]
+	bucket = append(bucket, newVal)
+
+	var overlap int
+	start := r.series[0:r.w] // starting overlap calc
+	overlap = vec.Overlap32(bucket, start)
+
+	// compute overlap on a sliding window...
+	var cursor uint32
+	for i := 0; i < b-r.w; i++ {
+		// decrement overlap if the idx we are removing was in bucket
+		cursor = r.series[i]
+		if vec.Contains32(bucket, cursor) {
+			overlap--
+		}
+
+		// increment overlap if the next idx is in bucket
+		cursor = r.series[i+r.w-1]
+		if vec.Contains32(bucket, cursor) {
+			overlap++
+		}
+
+		if overlap > r.maxOverlap {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (r *RDScalar) Buckets() int {
-	return len(r.series) - r.w
+	return len(r.series) - r.w + 1
 }

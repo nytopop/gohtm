@@ -91,6 +91,18 @@ func Overlap(a, b []int) int {
 	return overlap
 }
 
+func Overlap32(a, b []uint32) int {
+	var overlap int
+	for i := range a {
+		for j := range b {
+			if a[i] == b[j] {
+				overlap++
+			}
+		}
+	}
+	return overlap
+}
+
 // Equal returns the equality of two []int slices. Slightly faster
 // than binary searching the whole
 func Equal(a, b []int) bool {

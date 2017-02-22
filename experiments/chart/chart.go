@@ -2,14 +2,14 @@ package main
 
 import (
 	"log"
-	"math"
 	"os"
 
+	"github.com/nytopop/gohtm/vec"
 	chart "github.com/wcharczuk/go-chart"
 )
 
 func main() {
-	x, y := sineGen(512, 1.0)
+	x, y := vec.SineGen(512, 1.0, 0.1)
 
 	graph := chart.Chart{
 		YAxis: chart.YAxis{
@@ -38,18 +38,4 @@ func main() {
 			log.Fatalln(err)
 		}
 	}
-}
-
-func sineGen(n int, amp float64) ([]float64, []float64) {
-	dx := (math.Pi * 2) / 64.0
-	amp /= 2.0
-	theta := 0.0
-
-	x, y := make([]float64, n), make([]float64, n)
-	for i := 0; i < n; i++ {
-		x[i] = float64(i)
-		y[i] = (math.Sin(theta) * amp) + amp
-		theta += dx
-	}
-	return x, y
 }
