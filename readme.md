@@ -19,7 +19,7 @@ Further, I'm devoting attention to vision oriented problems and coordination of 
 - [x] Scalar encoder
 - [ ] Audio encoder
 - [ ] Vision encoder
-- [ ] Random distributed scalar encoder
+- [x] Random distributed scalar encoder
 - [x] Spatial Pooler
 - [x] Temporal Memory
 - [ ] Temporal Pooler
