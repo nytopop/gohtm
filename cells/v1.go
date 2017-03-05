@@ -1,6 +1,9 @@
 package cells
 
-import "math/rand"
+import (
+	"fmt"
+	"math/rand"
+)
 
 // V1Params contains parameters for initialization of V1 cellular state.
 type V1Params struct {
@@ -39,6 +42,7 @@ type V1Cell struct {
 type V1Segment struct {
 	active, matching bool
 	live, dead       int
+	lastIter         int
 	synapses         []V1Synapse
 }
 
@@ -63,7 +67,7 @@ func (v *V1) CreateSegment(cell int) int {
 	} else {
 		// TODO :: how do we handle this?
 		//         remove the oldest / least recent segment
-		//	fmt.Println("too many segments on cell")
+		fmt.Println("too many segments on cell", cell)
 	}
 
 	return len(v.cells[cell].segments) - 1
@@ -80,17 +84,31 @@ func (v *V1) CreateSynapse(cell, seg, target int, perm float32) {
 		}
 	}
 
-	if len(v.cells[cell].segments[seg].synapses) < v.P.SynsPerSeg {
+	if len(v.cells[cell].segments[seg].synapses) >= v.P.SynsPerSeg {
+		var idx int
+		var min float32
+
+		min = 1.2 // over 1.0
+		for i := range v.cells[cell].segments[seg].synapses {
+			if v.cells[cell].segments[seg].synapses[i].perm < min {
+				min = v.cells[cell].segments[seg].synapses[i].perm
+				idx = i
+			}
+		}
+
+		// now we remove idx from the synapse slice
 		v.cells[cell].segments[seg].synapses = append(
-			v.cells[cell].segments[seg].synapses,
-			V1Synapse{
-				cell: target,
-				perm: perm})
-	} else {
-		// TODO :: how do we handle this?
-		//         delete the least perm / least used synapse
-		//		fmt.Println("too many synapses on segment")
+			v.cells[cell].segments[seg].synapses[:idx],
+			v.cells[cell].segments[seg].synapses[idx+1:]...)
+
 	}
+
+	// append the new synapse
+	v.cells[cell].segments[seg].synapses = append(
+		v.cells[cell].segments[seg].synapses,
+		V1Synapse{
+			cell: target,
+			perm: perm})
 }
 
 // AdaptSegment adapts synapses on a segment to the provided slice
