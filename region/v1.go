@@ -1,8 +1,6 @@
 package region
 
 import (
-	"fmt"
-
 	"github.com/nytopop/gohtm/cla"
 	"github.com/nytopop/gohtm/enc"
 	"github.com/nytopop/gohtm/sp"
@@ -28,17 +26,21 @@ type V1 struct {
 	c cla.Classifier
 }
 
+// BuildV1 constructs a region from a JSON encoded region specification.
+func BuildV1(rspec string) *V1 {
+	return &V1{}
+}
+
 // NewV1 returns a new V1 Region initialized with the provided V1Params.
 func NewV1(p V1Params) *V1 {
-	epar := enc.NewScalarParams()
 	spar := sp.NewV1Params()
 	tpar := tm.NewV1Params()
 	cpar := cla.NewV2Params()
 
-	e := enc.NewScalar(epar)
+	e := enc.NewRDScalar(8192, 162, 0, 0.5)
 
-	spar.NumInputs = e.Bits
-	fmt.Println(e.Bits)
+	spar.NumInputs = 8192
+	spar.NumColumns = 8192
 	tpar.NumColumns = spar.NumColumns
 
 	s := sp.NewV1(spar)
@@ -55,22 +57,28 @@ func NewV1(p V1Params) *V1 {
 }
 
 type V1Result struct {
-	Datapoint    int
+	Datapoint    float64
 	AnomalyScore float64
-	Prediction   cla.V2Results
+	Prediction   cla.Result
 }
 
-func (r *V1) Compute(datapoint int, learn bool) V1Result {
+func (r *V1) Reset() {
+	r.t.Reset()
+}
+
+func (r *V1) Compute(datapoint float64, learn bool) V1Result {
 	// Encode to vector
-	inputvector := r.e.Encode(datapoint)
+	inputvector, bidx := r.e.Encode(datapoint)
 
 	// Compute SP and TM
-	activecolumns := r.s.Compute(inputvector, learn)
-	r.t.Compute(activecolumns, learn)
+	//activecolumns := r.s.Compute(inputvector, true)
+	//r.t.Compute(activecolumns, learn)
+
+	r.t.Compute(inputvector, learn)
 
 	// Get active cells and run classifier
 	activeCells := r.t.GetActiveCells()
-	prediction := r.c.Compute(activeCells, datapoint, true, true)
+	prediction := r.c.Compute(activeCells, bidx, datapoint, true, true)
 	anomaly := r.t.GetAnomalyScore()
 
 	return V1Result{

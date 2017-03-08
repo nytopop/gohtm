@@ -14,7 +14,7 @@ func main() {
 
 	_, sine := vec.SineGen(4096, 1.0, 0.02)
 	for i := range sine {
-		b := r.Encode(sine[i])
+		b, _ := r.Encode(sine[i])
 		fmt.Println(vec.ToInt(b), sine[i], r.Buckets())
 	}
 	fmt.Println(r.Buckets(), "buckets")

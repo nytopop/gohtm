@@ -28,7 +28,7 @@ func NewRDScalar(n uint32, w, o int, r float64) *RDScalar {
 }
 
 // Encode encodes a float value to a bit vector.
-func (r *RDScalar) Encode(s interface{}) []bool {
+func (r *RDScalar) Encode(s interface{}) ([]bool, int) {
 	// ensure we get a float64
 	if _, ok := s.(float64); !ok {
 		panic("RDScalar did not receive float64 input value!")
@@ -53,7 +53,7 @@ func (r *RDScalar) Encode(s interface{}) []bool {
 	}
 
 	// return the bucket
-	return vec.ToBool32(r.series[b:b+r.w], r.n)
+	return vec.ToBool32(r.series[b:b+r.w], r.n), b
 }
 
 // extendSeries will recursively create all buckets up to b.
@@ -124,4 +124,8 @@ func (r *RDScalar) isValidBucket(b int, newVal uint32) bool {
 
 func (r *RDScalar) Buckets() int {
 	return len(r.series) - r.w + 1
+}
+
+func (r *RDScalar) Decode(s []bool) interface{} {
+	return 0
 }

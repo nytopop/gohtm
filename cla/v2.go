@@ -43,26 +43,24 @@ func NewV2(p V2Params) *V2 {
 	return &V2{
 		P:              p,
 		patternHistory: make([][]int, 0),
-		maxSteps:       max(p.Steps),
+		maxSteps:       max(p.Steps) + 1,
 		maxInputIdx:    0,
 		maxBucketIdx:   0,
 		weightMatrix:   weights,
 	}
 }
 
-type V2Result struct {
-	P float64
-}
+func (c *V2) Compute(
+	sdr []int, bidx int, actValue float64,
+	learn, infer bool) Result {
 
-type V2Results []V2Result
+	// store pattern in history, pop off first when we exceed limit
+	c.patternHistory = append(c.patternHistory, sdr)
+	if len(c.patternHistory) > c.maxSteps {
+		c.patternHistory = c.patternHistory[1:]
+	}
 
-func (v V2Results) Len() int           { return len(v) }
-func (v V2Results) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
-func (v V2Results) Less(i, j int) bool { return v[i].P < v[j].P }
-
-func (c *V2) Compute(sdr []int, actValue int, learn, infer bool) V2Results {
-
-	return V2Results{}
+	return Result{}
 }
 
 func (c *V2) infer() {

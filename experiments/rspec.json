@@ -1,0 +1,55 @@
+{
+	"encoder": {
+		"type": "rdscalar",
+		"params": {
+			"n": 1024,
+			"w": 40,
+			"r": 0.1,
+			"maxOverlap": 4
+		}
+	},
+	"sp": {
+		"type": "v1",
+		"params": {
+			"numcolumns": 2048,
+			"numinputs": 1024,
+			"potentialradius": 8,
+			"potentialpct": 0.5,
+			"initconnpct": 0.3,
+			"synpermconnected": 0.3,
+			"globalinhibition": true,
+			"localareadensity": 0.02,
+			"stimulusthreshold": 0,
+			"synpermactivemod": 0.05,
+			"synperminactivemod": 0.03,
+			"dutycycleperiod": 8,
+			"minoverlapdutycycle": 0.04,
+			"minactivedutycycle": 0.04,
+			"maxboost": 8.0
+		}
+	},
+	"tm": {
+		"type": "v1",
+		"params": {
+			"numcolumns": 2048,
+			"cellspercol": 32,
+			"segspercell": 24,
+			"synsperseg": 24,
+			"initperm": 0.21,
+			"synpermconnected": 0.5,
+			"synpermlearnmod": 0.1,
+			"synpermpunishmod": 0.01,
+			"maxnewsyns": 16,
+			"activethreshold": 12,
+			"matchthreshold": 10
+		}
+	},
+	"classifier": {
+		"type": "v2",
+		"params": {
+			"steps": [1, 2, 4],
+			"alpha": 0.001,
+			"actvaluealpha": 0.3
+		}
+	}
+}

@@ -5,6 +5,10 @@ import (
 	"math/rand"
 )
 
+/* TODO
+
+ */
+
 // V1Params contains parameters for initialization of V1 cellular state.
 type V1Params struct {
 	NumColumns  int
@@ -401,8 +405,8 @@ func (v *V1) ComputePredictedCols() []bool {
 func (v *V1) ComputeStats() (int, int) {
 	var nSegs, nSyns int
 	for i := range v.cells {
+		nSegs += len(v.cells[i].segments)
 		for j := range v.cells[i].segments {
-			nSegs++
 			nSyns += len(v.cells[i].segments[j].synapses)
 		}
 	}

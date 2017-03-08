@@ -1,9 +1,17 @@
 package tm
 
 import (
+	"fmt"
+
 	"github.com/nytopop/gohtm/cells"
 	"github.com/nytopop/gohtm/vec"
 )
+
+/* TODO
+
+- create access methods for deltaInf, deltaAcc, and deltaAnm
+
+*/
 
 // V1Params contains parameters for initialization of a V1
 // TemporalMemory region.
@@ -27,33 +35,38 @@ type V1Params struct {
 func NewV1Params() V1Params {
 	return V1Params{
 		NumColumns:       2048,
-		CellsPerCol:      24,
-		SegsPerCell:      16,
-		SynsPerSeg:       16,
+		CellsPerCol:      32,
+		SegsPerCell:      32,
+		SynsPerSeg:       32,
 		InitPerm:         0.21,
 		SynPermConnected: 0.5,
 		SynPermLearnMod:  0.1,
 		SynPermPunishMod: 0.01,
 		MaxNewSyns:       16,
-		ActiveThreshold:  8,
-		MatchThreshold:   6,
+		ActiveThreshold:  12,
+		MatchThreshold:   10,
 	}
 }
 
 // V1 is a basic implementation of TemporalMemory.
 type V1 struct {
-	P    V1Params
-	Cons cells.Cells
+	// Params
+	P V1Params
 
+	// State
+	Cons            cells.Cells
 	PrevActiveCells []bool
 	PrevWinnerCells []bool
 	ActiveCells     []bool
 	WinnerCells     []bool
+	prediction      []bool
+	iteration       int
 
-	anomaly      float64
-	prediction   []bool
+	// Metrics
+	deltaInf     float64 // depolarized : active
+	deltaAcc     float64 // correct : incorrect
+	deltaAnm     float64 // (active-correct) : active
 	nSegs, nSyns int
-	iteration    int
 }
 
 // NewV1 initializes a new TemporalMemory region with the provided V1Params.
@@ -72,6 +85,7 @@ func NewV1(p V1Params) *V1 {
 		PrevWinnerCells: make([]bool, 0, p.NumColumns*p.CellsPerCol),
 		ActiveCells:     make([]bool, 0, p.NumColumns*p.CellsPerCol),
 		WinnerCells:     make([]bool, 0, p.NumColumns*p.CellsPerCol),
+		prediction:      make([]bool, p.NumColumns),
 		iteration:       0,
 	}
 }
@@ -79,26 +93,33 @@ func NewV1(p V1Params) *V1 {
 // Compute iterates the TemporalMemory algorithm with the
 // provided vector of active columns from a SpatialPooler.
 func (e *V1) Compute(active []bool, learn bool) {
-	// Compute prediction, anomaly, stats
-	e.prediction = e.Cons.ComputePredictedCols()
-	e.computeAnomalyScore(active)
-	e.nSegs, e.nSyns = e.Cons.ComputeStats()
+	// We compute metrics by taking prediction from last step
+	// and comparing to currently active columns
+	e.computeMetrics(active)
 
 	// Compute active / depolarized cells
 	e.activateCells(active, learn)
-
-	// Cleanup neural net
-	e.Cons.Cleanup()
 
 	// Compute active & matching dendrite segments
 	e.Cons.Clear()
 	e.Cons.ComputeActivity(e.ActiveCells, e.P.SynPermConnected,
 		e.P.ActiveThreshold, e.P.MatchThreshold)
 
+	// Cleanup neural net
+	e.Cons.Cleanup()
+
+	// Compute prediction, stats
+	e.prediction = e.Cons.ComputePredictedCols()
+	e.nSegs, e.nSyns = e.Cons.ComputeStats()
+
 	if learn {
 		e.iteration++
 		e.Cons.StartNewIteration()
 	}
+
+	fmt.Println("deltaInf:", e.deltaInf)
+	fmt.Println("deltaAcc:", e.deltaAcc)
+	fmt.Println("deltaAnm:", e.deltaAnm)
 }
 
 // Calculate the active cells using active columns and dendrite segments.
@@ -247,25 +268,26 @@ func (e *V1) Reset() {
 	e.WinnerCells = make([]bool, e.P.NumColumns*e.P.CellsPerCol)
 }
 
-func (e *V1) computeAnomalyScore(active []bool) {
-	/*
-		1. Confidences (soft match count)
-			for each column
-				get the number of active synapses, live || dead
-		2. Predicted cells (hard match count)
-			normalized count of how many columns active and not predicted
-			in the previous time step.
-	*/
-	var activeC, predictedC int
+func (e *V1) computeMetrics(active []bool) {
+	var nActive, nGood, nBad int
 	for i := range active {
 		if active[i] {
-			activeC++
-			if e.prediction[i] {
-				predictedC++
+			nActive++
+		}
+
+		if e.prediction[i] {
+			switch active[i] {
+			case true:
+				nGood++
+			case false:
+				nBad++
 			}
 		}
 	}
-	e.anomaly = 1 - (float64(predictedC) / float64(activeC))
+
+	e.deltaInf = float64(nGood+nBad) / float64(nActive)
+	e.deltaAcc = float64(nGood) / float64(nBad)
+	e.deltaAnm = float64(nActive-nGood) / float64(nActive)
 }
 
 // GetActiveCells returns the currently active cells, in []int
@@ -276,7 +298,7 @@ func (e *V1) GetActiveCells() []int {
 
 // GetAnomalyScore returns the current normalized anomaly score.
 func (e *V1) GetAnomalyScore() float64 {
-	return e.anomaly
+	return e.deltaAnm
 }
 
 // GetPrediction returns the current set of depolarized columns.

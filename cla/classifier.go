@@ -34,5 +34,11 @@ type Classifier interface {
 	/*	Associate(active, vector []bool)
 		Classify(prediction []bool) V1Sortable // this needs to change
 	*/
-	Compute(sdr []int, actValue int, learn, infer bool) V2Results
+	Compute(
+		sdr []int, bidx int, actValue float64,
+		learn, infer bool) Result
+}
+
+type Result struct {
+	P float64
 }

@@ -13,6 +13,6 @@ package enc
 // should implement a Decode and an Encode method, persistent
 // state is not required.
 type Encoder interface {
-	Encode(interface{}) []bool
+	Encode(interface{}) ([]bool, int)
 	Decode([]bool) interface{}
 }

@@ -36,7 +36,7 @@ func main() {
 		defer timeTrack(time.Now(), "9 entries")
 		for j := 0; j < 9; j++ {
 			fmt.Println(v.AnomalyScore)
-			v = r.Compute(j*5, true)
+			v = r.Compute(float64(j*5), true)
 		}
 	}
 
