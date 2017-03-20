@@ -9,7 +9,7 @@ import (
 // SineGen generates a sine wave, with n elements, amplitude of amp,
 // and noise ratio of noise.
 func SineGen(n int, amp, noise float64) ([]float64, []float64) {
-	dx := (math.Pi * 2) / 512.0
+	dx := (math.Pi * 2) / 64.0
 	scaler := 1.0 / amp
 	amp /= 2.0
 	theta := 0.0
