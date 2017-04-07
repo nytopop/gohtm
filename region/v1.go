@@ -33,17 +33,17 @@ func BuildV1(rspec string) *V1 {
 
 // NewV1 returns a new V1 Region initialized with the provided V1Params.
 func NewV1(p V1Params) *V1 {
-	spar := sp.NewV1Params()
+	spar := sp.NewV2Params()
 	tpar := tm.NewV1Params()
 	cpar := cla.NewV2Params()
 
-	e := enc.NewRDScalar(8192, 162, 0, 0.5)
+	e := enc.NewRDScalar(1024, 102, 0, 0.5)
 
-	spar.NumInputs = 8192
-	spar.NumColumns = 8192
+	spar.NumInputs = 1024
+	spar.NumColumns = 2048
 	tpar.NumColumns = spar.NumColumns
 
-	s := sp.NewV1(spar)
+	s := sp.NewV2(spar)
 	t := tm.NewV1(tpar)
 	c := cla.NewV2(cpar)
 
@@ -71,10 +71,10 @@ func (r *V1) Compute(datapoint float64, learn bool) V1Result {
 	inputvector, bidx := r.e.Encode(datapoint)
 
 	// Compute SP and TM
-	//activecolumns := r.s.Compute(inputvector, true)
-	//r.t.Compute(activecolumns, learn)
+	activecolumns := r.s.Compute(inputvector, learn)
+	r.t.Compute(activecolumns, learn)
 
-	r.t.Compute(inputvector, learn)
+	//r.t.Compute(inputvector, learn)
 
 	// Get active cells and run classifier
 	activeCells := r.t.GetActiveCells()

@@ -1,3 +1,6 @@
+# Info
+This file contains ideas for in-progress and upcoming research directions.
+
 # Feedback impl
 If we have two regions r1 & r2, each learning a character stream, and a region r3 learning activity of r1 & r2.
 
@@ -63,3 +66,25 @@ serialize all stateful components to bytestream with gob
 - temporal memory
 - temporal pooler
 - classifier
+
+# Sensory-motor action integration
+- classification -> prediction -> optimization
+- l0 : universal learner (sp)
+- l1 : universal learning predictor (sp + tm)
+- l2 : universal learning predictive optimizer (sp + tm + sm)
+- predict an action that leads to x result
+fn(s sensor) -> prediction
+fn(x result, p prediction) -> action
+
+# Spatio-Temporal scoping
+We can use region hierarchies to realize two key properties in an htm network shaped as a binary tree: spatial and temporal scoping.
+
+k : depth
+s : spatial scope
+t : temporal scope
+
+With a scoping rate of 2^k, the _spatial scope_ of any region is { 2^k }. E.g., if k = 2, that region's input pooling process will isolate features distributed across 4 inputs on the network.
+
+The spatial abstraction level of a region can be given as k; each level of the hierarchy isolates features in the next lower level's pooled representation. This property persists with any network topology.
+
+With a scoping rate of 2^k, the _temporal scope_ of any region is { 2^k }. E.g., if k = 2, that region will only process inputs where { i % 4 = 0 }. In the interims where no inputs are processed, the feedback from the last processed input is persisted.

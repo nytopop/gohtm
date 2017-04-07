@@ -93,6 +93,9 @@ func NewV1(p V1Params) *V1 {
 // Compute iterates the TemporalMemory algorithm with the
 // provided vector of active columns from a SpatialPooler.
 func (e *V1) Compute(active []bool, learn bool) {
+	if len(active) != e.P.NumColumns {
+		panic("TM: Mismatched input dimensions")
+	}
 	// We compute metrics by taking prediction from last step
 	// and comparing to currently active columns
 	e.computeMetrics(active)
@@ -286,7 +289,7 @@ func (e *V1) computeMetrics(active []bool) {
 	}
 
 	e.deltaInf = float64(nGood+nBad) / float64(nActive)
-	e.deltaAcc = float64(nGood) / float64(nBad)
+	e.deltaAcc = float64(nGood) / float64(nBad+nGood)
 	e.deltaAnm = float64(nActive-nGood) / float64(nActive)
 }
 

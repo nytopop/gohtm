@@ -11,14 +11,14 @@ type V2Params struct {
 	NumColumns       int
 	NumInputs        int
 	PotentialRadius  int
-	PotentialPct     float64
-	InitConnPct      float64
-	SynPermConnected float32
-	SynPermMod       float32
+	PotentialPct     float64 //
+	InitConnPct      float64 //
+	SynPermConnected float32 //
+	SynPermMod       float32 //
 	Sparsity         float64
 	DutyCyclePeriod  int
-	MinDutyCycle     float64
-	MaxBoost         float64
+	MinDutyCycle     float64 //
+	MaxBoost         float64 //
 }
 
 // NewV2Params returns a default set of V2Params.
@@ -31,9 +31,9 @@ func NewV2Params() V2Params {
 		InitConnPct:      0.3,
 		SynPermConnected: 0.5,
 		SynPermMod:       0.05,
-		Sparsity:         0.1,
-		DutyCyclePeriod:  1000,
-		MinDutyCycle:     0.04,
+		Sparsity:         0.02,
+		DutyCyclePeriod:  32,
+		MinDutyCycle:     0.2,
 		MaxBoost:         8.0,
 	}
 }

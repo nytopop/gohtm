@@ -55,3 +55,8 @@ Temporal Memory learns variable order sequences.
 
 ### Temporal Pooler
 ### Classifier
+
+SP0 learns features input
+SP1 learns features of features0
+SP2 learns features of features1
+
