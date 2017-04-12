@@ -1,44 +1,40 @@
-// Package cla provides implementation agnostic classifiers for gohtm.
+/*
+Package cla provides implementation agnostic classifiers
+for gohtm. A classifier is neccessary for conversions from
+the TM algorithm's internal state to a real valued output.
+
+There are currently two classifiers (both in progress).
+
+V1 directly associates column activity patterns with bucket
+values from an encoder; on calling infer with a pattern of
+depolarized cells, V1 will do a simple search through all
+stored patterns and return the top 4 indices by overlap.
+
+V2 is somewhat more advanced, it uses a feedforward ANN to
+classify column patterns more reliably than V2 can.
+*/
 package cla
 
-/* Classifier functionality
-
-Receive copy of input SDR paired with the encoded vector.
-Receive predicted SDR, and sort previous SDRs by overlap score.
-
-Previous inputs:
-1111000000000000 : 0
-0001111000000000 : 1
-0000001111000000 : 2
-0000000001111000 : 3
-0000000000001111 : 4
-
-Receives:
-
-0111100000000000
-
-Outputs :
-0 : 3 overlap
-1 : 2 overlap
-2 : 0 overlap ...
-
-This provides a pseudo-probability function for predictions
-As in, x input sdr is probably referring to z previous SDR.
-_This is not a prediction of likelihood!!!_
-
-count how many synapses are active/matching for confidence value
-*/
-
-// Classifier asdf
+// Classifier interface for classifiers to implement.
 type Classifier interface {
-	/*	Associate(active, vector []bool)
-		Classify(prediction []bool) V1Sortable // this needs to change
-	*/
 	Compute(
 		sdr []int, bidx int, actValue float64,
 		learn, infer bool) Result
+
+	// TODO
+	// compute::encoderBucket, activeCells
+	// infer::depolarizedCells -> Results
 }
 
+// Result should be returned by all classifiers. P represents
+// a probability value.
 type Result struct {
 	P float64
 }
+
+// Results type for sorting by probability.
+type Results []Result
+
+func (r Results) Len() int           { return len(r) }
+func (r Results) Less(i, j int) bool { return r[i].P > r[j].P }
+func (r Results) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }

@@ -1,4 +1,7 @@
-// Package vec provides vector manipulation functions for the htm algorithm.
+/*
+Package vec provides vector manipulation and utility
+functions for gohtm.
+*/
 package vec
 
 import "sort"

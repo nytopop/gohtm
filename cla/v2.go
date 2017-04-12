@@ -35,7 +35,8 @@ type V2 struct {
 	weightMatrix   [][]float64
 }
 
-// NewV2 returns a new V2 Classifier initialized with the provided V2Params.
+// NewV2 returns a new V2 Classifier initialized
+// with the provided V2Params.
 func NewV2(p V2Params) *V2 {
 	weights := make([][]float64, 1)
 	weights[0] = make([]float64, 1)

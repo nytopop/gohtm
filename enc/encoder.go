@@ -1,5 +1,13 @@
-// Package enc provides an implementation agnostic interface for encoding and
-// decoding of data into a vector format suitable for the htm algorithm.
+/*
+Package enc provides an implementation agnostic
+interface for encoding and decoding data into
+semi-sparse distributed representations consumable
+by a spatial pooling algorithm.
+
+Encoders also return a bucket index that can be
+passed back through the algorithm for a decoded
+representation (+/- encoder resolution).
+*/
 package enc
 
 /* Encoder Design Guidelines
@@ -9,9 +17,7 @@ package enc
 4. The output should have similar sparsity for all inputs and have enough one-bits to handle noise and subsampling.
 */
 
-// Encoder is an interface for all sparse encoders. A valid Encoder
-// should implement a Decode and an Encode method, persistent
-// state is not required.
+// Encoder is an interface for all sparse encoders.
 type Encoder interface {
 	Encode(interface{}) ([]bool, int)
 	Decode([]bool) interface{}

@@ -1,33 +1,32 @@
 package sp
 
 import (
-	"log"
 	"math/rand"
 	"sort"
 )
 
 // V2Params contains parameters for initialization of a V2 SpatialPooler.
 type V2Params struct {
-	NumColumns       int
-	NumInputs        int
-	PotentialRadius  int
-	PotentialPct     float64 //
-	InitConnPct      float64 //
-	SynPermConnected float32 //
-	SynPermMod       float32 //
-	Sparsity         float64
-	DutyCyclePeriod  int
-	MinDutyCycle     float64 //
-	MaxBoost         float64 //
+	NumColumns       int     `json:"numcolumns"`
+	NumInputs        int     `json:"numinputs"`
+	PotentialRadius  int     `json:"potentialradius"`
+	PotentialPct     float64 `json:"potentialpct"`
+	InitConnPct      float64 `json:"initconnpct"`
+	SynPermConnected float32 `json:"synpermconnected"`
+	SynPermMod       float32 `json:"synpermmod"`
+	Sparsity         float64 `json:"sparsity"`
+	DutyCyclePeriod  int     `json:"dutycycleperiod"`
+	MinDutyCycle     float64 `json:"mindutycycle"`
+	MaxBoost         float64 `json:"maxboost"`
 }
 
 // NewV2Params returns a default set of V2Params.
 func NewV2Params() V2Params {
 	return V2Params{
-		NumColumns:       64,
-		NumInputs:        64,
+		NumColumns:       2048,
+		NumInputs:        1024,
 		PotentialRadius:  0,
-		PotentialPct:     0.10,
+		PotentialPct:     0.02,
 		InitConnPct:      0.3,
 		SynPermConnected: 0.5,
 		SynPermMod:       0.05,
@@ -40,9 +39,9 @@ func NewV2Params() V2Params {
 
 // V2 SpatialPooler.
 type V2 struct {
-	P         V2Params
-	cells     []V2Cell
-	iteration int
+	P         V2Params `json:"params"`
+	Cells     []V2Cell `json:"cells"`
+	Iteration int      `json:"iteration"`
 }
 
 // NewV2 initializes and returns a new V2 SpatialPooler with the
@@ -50,16 +49,16 @@ type V2 struct {
 func NewV2(p V2Params) *V2 {
 	s := &V2{
 		P:         p,
-		cells:     make([]V2Cell, p.NumColumns),
-		iteration: 0,
+		Cells:     make([]V2Cell, p.NumColumns),
+		Iteration: 0,
 	}
 
 	// Initialize potential synapses
-	for i := range s.cells {
+	for i := range s.Cells {
 		s.mapPotential(i)
-		s.cells[i].oPeriod = make([]int, 0)
-		s.cells[i].aPeriod = make([]bool, 0)
-		s.cells[i].boostFactor = 1.0
+		s.Cells[i].oPeriod = make([]int, 0)
+		s.Cells[i].aPeriod = make([]bool, 0)
+		s.Cells[i].boostFactor = 1.0
 	}
 
 	return s
@@ -67,24 +66,25 @@ func NewV2(p V2Params) *V2 {
 
 // V2Cell ...
 type V2Cell struct {
-	boostFactor      float64 // boost multiplier
-	oPeriod          []int   // overlap period
-	overlapDutyCycle float64 // overlap duty cycle
-	aPeriod          []bool  // active period
-	activeDutyCycle  float64 // active duty cycle
-	synapses         []V2Synapse
+	Synapses         []V2Synapse `json:"synapses"`
+	boostFactor      float64
+	oPeriod          []int
+	overlapDutyCycle float64
+	aPeriod          []bool
+	activeDutyCycle  float64
 }
 
 // V2Synapse ...
 type V2Synapse struct {
-	idx  int     // input index
-	perm float32 // permanence
+	Idx  int     `json:"idx"`
+	Perm float32 `json:"perm"`
 }
 
 // Compute ...
 func (s *V2) Compute(input []bool, learn bool) []bool {
-	if len(input) != s.P.NumInputs {
-		log.Fatalln("SP: Mismatched input dims", s.P.NumInputs, len(input))
+	switch {
+	case len(input) != s.P.NumInputs:
+		panic("sp: mismatched input dimensions")
 	}
 
 	// Calculate overlaps and inhibit cells
@@ -98,7 +98,7 @@ func (s *V2) Compute(input []bool, learn bool) []bool {
 		s.updateActiveDutyCycles(activeCells)
 		s.bumpWeakCells()
 		s.updateBoostFactors()
-		s.iteration++
+		s.Iteration++
 	}
 
 	return activeCells
@@ -107,10 +107,10 @@ func (s *V2) Compute(input []bool, learn bool) []bool {
 // calcOverlaps ...
 func (s *V2) calcOverlaps(input []bool) []int {
 	overlaps := make([]int, s.P.NumColumns)
-	for i := range s.cells {
-		for j := range s.cells[i].synapses {
-			if s.cells[i].synapses[j].perm >= s.P.SynPermConnected {
-				if input[s.cells[i].synapses[j].idx] {
+	for i := range s.Cells {
+		for j := range s.Cells[i].Synapses {
+			if s.Cells[i].Synapses[j].Perm >= s.P.SynPermConnected {
+				if input[s.Cells[i].Synapses[j].Idx] {
 					overlaps[i]++
 				}
 			}
@@ -121,15 +121,15 @@ func (s *V2) calcOverlaps(input []bool) []int {
 
 // V2InhCell ...
 type V2InhCell struct {
-	idx     int
-	overlap float64
+	idx  int
+	olap float64
 }
 
 // V2InhNet ...
 type V2InhNet []V2InhCell
 
 func (v V2InhNet) Len() int           { return len(v) }
-func (v V2InhNet) Less(i, j int) bool { return v[i].overlap > v[j].overlap }
+func (v V2InhNet) Less(i, j int) bool { return v[i].olap > v[j].olap }
 func (v V2InhNet) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
 
 // inhibitCells ...
@@ -142,15 +142,15 @@ func (s *V2) inhibitCells(overlapScores []int, learn bool) []bool {
 	case true:
 		for i := range overlaps {
 			overlaps[i] = V2InhCell{
-				idx:     i,
-				overlap: float64(overlapScores[i]) * s.cells[i].boostFactor,
+				idx:  i,
+				olap: float64(overlapScores[i]) * s.Cells[i].boostFactor,
 			}
 		}
 	case false:
 		for i := range overlaps {
 			overlaps[i] = V2InhCell{
-				idx:     i,
-				overlap: float64(overlapScores[i]),
+				idx:  i,
+				olap: float64(overlapScores[i]),
 			}
 		}
 	}
@@ -175,12 +175,12 @@ func (s *V2) adaptSynapses(input []bool, activeCells []bool) {
 	var perm float32
 	for i := range activeCells {
 		if activeCells[i] {
-			for j := range s.cells[i].synapses {
+			for j := range s.Cells[i].Synapses {
 				// decide whether to bump up or down
-				switch input[s.cells[i].synapses[j].idx] {
+				switch input[s.Cells[i].Synapses[j].Idx] {
 				case true:
 					// bump up contributing synapse
-					perm = s.cells[i].synapses[j].perm
+					perm = s.Cells[i].Synapses[j].Perm
 					perm += s.P.SynPermMod
 
 					// clamp [0.0 : 1.0]
@@ -191,10 +191,10 @@ func (s *V2) adaptSynapses(input []bool, activeCells []bool) {
 						perm = 0.0
 					}
 
-					s.cells[i].synapses[j].perm = perm
+					s.Cells[i].Synapses[j].Perm = perm
 				case false:
 					// bump down non-contributing synapse
-					perm = s.cells[i].synapses[j].perm
+					perm = s.Cells[i].Synapses[j].Perm
 					perm -= s.P.SynPermMod
 
 					// clamp [0.0 : 1.0]
@@ -205,7 +205,7 @@ func (s *V2) adaptSynapses(input []bool, activeCells []bool) {
 						perm = 0.0
 					}
 
-					s.cells[i].synapses[j].perm = perm
+					s.Cells[i].Synapses[j].Perm = perm
 				}
 			}
 		}
@@ -216,20 +216,20 @@ func (s *V2) adaptSynapses(input []bool, activeCells []bool) {
 func (s *V2) updateOverlapDutyCycles(overlaps []int) {
 	// OVERLAP duty cycle is a moving average of the number of
 	// inputs which overlapped with the each column
-	for i := range s.cells {
-		s.cells[i].oPeriod = append(s.cells[i].oPeriod, overlaps[i])
-		if len(s.cells[i].oPeriod) > s.P.DutyCyclePeriod {
-			s.cells[i].oPeriod = s.cells[i].oPeriod[1:]
+	for i := range s.Cells {
+		s.Cells[i].oPeriod = append(s.Cells[i].oPeriod, overlaps[i])
+		if len(s.Cells[i].oPeriod) > s.P.DutyCyclePeriod {
+			s.Cells[i].oPeriod = s.Cells[i].oPeriod[1:]
 		}
 
 		var sum int
-		for j := range s.cells[i].oPeriod {
-			sum += s.cells[i].oPeriod[j]
+		for j := range s.Cells[i].oPeriod {
+			sum += s.Cells[i].oPeriod[j]
 		}
 
 		// calc moving average
-		s.cells[i].overlapDutyCycle =
-			float64(sum) / float64(len(s.cells[i].oPeriod))
+		s.Cells[i].overlapDutyCycle =
+			float64(sum) / float64(len(s.Cells[i].oPeriod))
 	}
 }
 
@@ -237,22 +237,22 @@ func (s *V2) updateOverlapDutyCycles(overlaps []int) {
 func (s *V2) updateActiveDutyCycles(activeCells []bool) {
 	// ACTIVITY duty cycles is a moving average of
 	// the frequency of activation for each column.
-	for i := range s.cells {
-		s.cells[i].aPeriod = append(s.cells[i].aPeriod, activeCells[i])
-		if len(s.cells[i].aPeriod) > s.P.DutyCyclePeriod {
-			s.cells[i].aPeriod = s.cells[i].aPeriod[1:]
+	for i := range s.Cells {
+		s.Cells[i].aPeriod = append(s.Cells[i].aPeriod, activeCells[i])
+		if len(s.Cells[i].aPeriod) > s.P.DutyCyclePeriod {
+			s.Cells[i].aPeriod = s.Cells[i].aPeriod[1:]
 		}
 
 		var sum int
-		for j := range s.cells[i].aPeriod {
-			if s.cells[i].aPeriod[j] {
+		for j := range s.Cells[i].aPeriod {
+			if s.Cells[i].aPeriod[j] {
 				sum++
 			}
 		}
 
 		// calc moving average
-		s.cells[i].activeDutyCycle =
-			float64(sum) / float64(len(s.cells[i].aPeriod))
+		s.Cells[i].activeDutyCycle =
+			float64(sum) / float64(len(s.Cells[i].aPeriod))
 	}
 }
 
@@ -261,10 +261,10 @@ func (s *V2) bumpWeakCells() {
 	// increase permanence on all synapses
 	// belonging to weak cells
 	var perm float32
-	for i := range s.cells {
-		if s.cells[i].overlapDutyCycle < s.P.MinDutyCycle {
-			for j := range s.cells[i].synapses {
-				perm = s.cells[i].synapses[j].perm
+	for i := range s.Cells {
+		if s.Cells[i].overlapDutyCycle < s.P.MinDutyCycle {
+			for j := range s.Cells[i].Synapses {
+				perm = s.Cells[i].Synapses[j].Perm
 				perm += s.P.SynPermMod
 				switch {
 				case perm > 1.0:
@@ -272,7 +272,7 @@ func (s *V2) bumpWeakCells() {
 				case perm < 0.0:
 					perm = 0.0
 				}
-				s.cells[i].synapses[j].perm = perm
+				s.Cells[i].Synapses[j].Perm = perm
 			}
 		}
 	}
@@ -285,13 +285,13 @@ func (s *V2) updateBoostFactors() {
 	// only cells with an active duty cycle below s.P.Sparsity are
 	// boosted, all others remain at 1.0
 	var r float64
-	for i := range s.cells {
+	for i := range s.Cells {
 		switch {
-		case s.cells[i].activeDutyCycle < s.P.Sparsity:
-			r = 1 - (s.cells[i].activeDutyCycle / s.P.Sparsity)
-			s.cells[i].boostFactor = r*s.P.MaxBoost + 1
-		case s.cells[i].activeDutyCycle > s.P.Sparsity:
-			s.cells[i].boostFactor = 1.0
+		case s.Cells[i].activeDutyCycle < s.P.Sparsity:
+			r = 1 - (s.Cells[i].activeDutyCycle / s.P.Sparsity)
+			s.Cells[i].boostFactor = r*s.P.MaxBoost + 1
+		case s.Cells[i].activeDutyCycle > s.P.Sparsity:
+			s.Cells[i].boostFactor = 1.0
 		}
 	}
 }
@@ -309,10 +309,10 @@ func (s *V2) mapPotential(cell int) {
 	sample := rand.Perm(len(nbs))[:n]
 
 	// Grow synapses
-	s.cells[cell].synapses = make([]V2Synapse, len(sample))
+	s.Cells[cell].Synapses = make([]V2Synapse, len(sample))
 	for syn, idx := range sample {
-		s.cells[cell].synapses[syn].idx = nbs[idx]
-		s.cells[cell].synapses[syn].perm = s.getInitPerm()
+		s.Cells[cell].Synapses[syn].Idx = nbs[idx]
+		s.Cells[cell].Synapses[syn].Perm = s.getInitPerm()
 	}
 }
 

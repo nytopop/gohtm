@@ -1,9 +1,16 @@
-// Package cells provides an implementation agnostic interface for storage
-// and manipulation of cellular and synaptic state.
+/*
+Package cells provides an implementation agnostic
+interface for the storage and manipulation of synaptic
+state.
+*/
 package cells
 
-// Cells is an interface for TemporalMemory compatible cellular and synaptic
-// state.
+// TODO
+// this whole package should be limited
+// to _synaptic_ state, not cellular
+
+// Cells is an interface for TemporalMemory
+// compatible cellular and synaptic state.
 type Cells interface {
 	CreateSegment(cell int) int                        // TODO
 	CreateSynapse(cell, seg, target int, perm float32) // TODO

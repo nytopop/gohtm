@@ -1,6 +1,33 @@
-// Package region provides an implementation agnostic interface for linking
-// and interacting with computational units of the htm algorithm.
+/*
+Package region provides an implementation agnostic
+interface for building and using gohtm regions.
+*/
 package region
+
+// Region ...
+type Region interface {
+}
+
+/* Sensor region
+inputs : topDown | sensor datagram
+outputs: bottomUp | probability distribution
+*/
+type Input struct {
+}
+
+/* Bi-directional region
+inputs : bottomUp | topDown
+outputs: bottomUp | topDown
+*/
+type Bidir struct {
+}
+
+/* Uni-directional region
+inputs : bottomUp
+outputs: topDown
+*/
+type Unidir struct {
+}
 
 /* Region Types
 
@@ -18,10 +45,4 @@ TopRegion | Top level of hierarchy, com with lower regions
   Algs: sp, tm, tp (?)
   Inputs: bottomUp
   Outputs: topDown
-
-TODO
-  MultiEncoder
-  Classifier
-  Temporal Pooler
-  Temporal Memory w/ apical dendrites
 */

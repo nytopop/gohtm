@@ -31,6 +31,8 @@ r2: [t, g]
 
 r3 should bias r1 into predicting [x, z] rather than [c, d]
 
+Deps: extended TM
+
 # Zero pooler test
 Feed encoded vector directly into temporal memory.
 Analyze predictive performance, perf metrics.
@@ -41,7 +43,6 @@ Analyze correlations between col count, cell count, synapse count
 CPU profile.
 
 # Sensory-motor test / impl
-Waiting until extended temporal memory is implemented
 Build a simulated environment like:
 
 |-------|
@@ -54,18 +55,21 @@ Build a simulated environment like:
 - sensor data (object centric)
 - motor command
 
+Deps: extended TM
+
 # JSON region specs
 test JSON format region specification with a constructor.
 
 # Region Serialization
 Train a region,
-serialize all stateful components to bytestream with gob
+serialize all stateful components to bytestream with JSON
 
-- encoder
-- spatial pooler
-- temporal memory
-- temporal pooler
-- classifier
+- [x] encoder
+- [x] spatial pooler
+- [x] temporal memory
+- [ ] region
+- [ ] network
+- [ ] classifier
 
 # Sensory-motor action integration
 - classification -> prediction -> optimization
@@ -76,15 +80,15 @@ serialize all stateful components to bytestream with gob
 fn(s sensor) -> prediction
 fn(x result, p prediction) -> action
 
-# Spatio-Temporal scoping
-We can use region hierarchies to realize two key properties in an htm network shaped as a binary tree: spatial and temporal scoping.
+// generate a state prediction
+fn(s sensor) -> prediction
 
-k : depth
-s : spatial scope
-t : temporal scope
+// generate a desired transform; we have state and goal
+fn(g goal, p prediction) -> transform
+fn() -> motor
 
-With a scoping rate of 2^k, the _spatial scope_ of any region is { 2^k }. E.g., if k = 2, that region's input pooling process will isolate features distributed across 4 inputs on the network.
+current aState; desired bState
+tform = transform(aState -> bState)
+action = action(tform)
 
-The spatial abstraction level of a region can be given as k; each level of the hierarchy isolates features in the next lower level's pooled representation. This property persists with any network topology.
-
-With a scoping rate of 2^k, the _temporal scope_ of any region is { 2^k }. E.g., if k = 2, that region will only process inputs where { i % 4 = 0 }. In the interims where no inputs are processed, the feedback from the last processed input is persisted.
+Deps: extended TM

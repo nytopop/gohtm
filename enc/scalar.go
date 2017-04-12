@@ -1,5 +1,7 @@
 package enc
 
+// TODO : does not implement Encoder
+
 // ScalarParams represents a parameter set for a Scalar Encoder.
 type ScalarParams struct {
 	Buckets  int

@@ -6,30 +6,35 @@ import (
 	"github.com/nytopop/gohtm/vec"
 )
 
-// V1Params contains parameters for initialization of a V1 Classifier.
+// V1Params contains parameters for the
+// initialization of a V1 Classifier.
 type V1Params struct {
 }
 
-// NewV1Params returns a default set of parameters for a V1 Classifier.
+// NewV1Params returns a default set of
+// parameters for a V1 Classifier.
 func NewV1Params() V1Params {
 	return V1Params{}
 }
 
-// V1 Classifier.
+// V1 Classifier. This is a fairly naive algorithm,
+// so it does not work well.
 type V1 struct {
 	P       V1Params
 	entries V1Sortable
 }
 
-// NewV1 returns a new V1 Classifier initialized with the provided V1Params.
+// NewV1 returns a new V1 Classifier
+// initialized with the provided V1Params.
 func NewV1(p V1Params) *V1 {
 	return &V1{
 		P: p,
 	}
 }
 
-// V1Entry represents a single entry in the classifier. The Overlap value
-// is only populated on return from the (v *V1) Classify() method.
+// V1Entry represents a single entry in the
+// classifier. The Overlap value is only
+// populated on return from (v *V1) Classify().
 type V1Entry struct {
 	Overlap     int // This is only populated on return values
 	InputVector []int

@@ -1,34 +1,28 @@
 package tm
 
 import (
-	"fmt"
-
 	"github.com/nytopop/gohtm/cells"
 	"github.com/nytopop/gohtm/vec"
 )
 
 /* TODO
-
 - create access methods for deltaInf, deltaAcc, and deltaAnm
-
 */
 
 // V1Params contains parameters for initialization of a V1
 // TemporalMemory region.
 type V1Params struct {
-	NumColumns  int // input space dimensions
-	CellsPerCol int // cells per column
-	SegsPerCell int // max segments per cell
-	SynsPerSeg  int // max synapses per segment
-
-	InitPerm         float32 // initial permanence of new synapses
-	SynPermConnected float32 // threshold for synapse to be deemed connected
-	SynPermLearnMod  float32 // permanence mod during learning
-	SynPermPunishMod float32 // permanence mod for incorrect prediction
-
-	MaxNewSyns      int // max new synapses per segment per iteration
-	ActiveThreshold int // threshold for segment to turn active
-	MatchThreshold  int // threshold for segment to turn matching
+	NumColumns       int     `json:"numcolumns"`
+	CellsPerCol      int     `json:"cellspercol"`
+	SegsPerCell      int     `json:"segspercell"`
+	SynsPerSeg       int     `json:"synsperseg"`
+	InitPerm         float32 `json:"initperm"`
+	SynPermConnected float32 `json:"synpermconnected"`
+	SynPermLearnMod  float32 `json:"synpermlearnmod"`
+	SynPermPunishMod float32 `json:"synpermpunishmod"`
+	MaxNewSyns       int     `json:"maxnewsyns"`
+	ActiveThreshold  int     `json:"activethreshold"`
+	MatchThreshold   int     `json:"matchthreshold"`
 }
 
 // NewV1Params returns a default V1Params.
@@ -40,21 +34,21 @@ func NewV1Params() V1Params {
 		SynsPerSeg:       32,
 		InitPerm:         0.21,
 		SynPermConnected: 0.5,
-		SynPermLearnMod:  0.1,
+		SynPermLearnMod:  0.05,
 		SynPermPunishMod: 0.01,
 		MaxNewSyns:       16,
 		ActiveThreshold:  12,
-		MatchThreshold:   10,
+		MatchThreshold:   8,
 	}
 }
 
 // V1 is a basic implementation of TemporalMemory.
 type V1 struct {
 	// Params
-	P V1Params
+	P V1Params `json:"params"`
 
 	// State
-	Cons            cells.Cells
+	Cons            cells.Cells `json:"cons"`
 	PrevActiveCells []bool
 	PrevWinnerCells []bool
 	ActiveCells     []bool
@@ -69,8 +63,9 @@ type V1 struct {
 	nSegs, nSyns int
 }
 
-// NewV1 initializes a new TemporalMemory region with the provided V1Params.
-func NewV1(p V1Params) *V1 {
+// NewV1 initializes a new TemporalMemory region
+// with the provided V1Params.
+func NewV1(p V1Params) TemporalMemory {
 	cp := cells.V1Params{
 		NumColumns:  p.NumColumns,
 		CellsPerCol: p.CellsPerCol,
@@ -93,9 +88,14 @@ func NewV1(p V1Params) *V1 {
 // Compute iterates the TemporalMemory algorithm with the
 // provided vector of active columns from a SpatialPooler.
 func (e *V1) Compute(active []bool, learn bool) {
-	if len(active) != e.P.NumColumns {
-		panic("TM: Mismatched input dimensions")
+	// runtime checks
+	switch {
+	case len(active) != e.P.NumColumns:
+		panic("tm: mismatched input dimensions")
+	case e.P.MatchThreshold >= e.P.ActiveThreshold:
+		panic("tm: match threshold is >= activethreshold")
 	}
+
 	// We compute metrics by taking prediction from last step
 	// and comparing to currently active columns
 	e.computeMetrics(active)
@@ -120,9 +120,6 @@ func (e *V1) Compute(active []bool, learn bool) {
 		e.Cons.StartNewIteration()
 	}
 
-	fmt.Println("deltaInf:", e.deltaInf)
-	fmt.Println("deltaAcc:", e.deltaAcc)
-	fmt.Println("deltaAnm:", e.deltaAnm)
 }
 
 // Calculate the active cells using active columns and dendrite segments.
@@ -146,16 +143,16 @@ func (e *V1) activateCells(active []bool, learn bool) {
 
 	for i := range active {
 		if active[i] {
-			syns := e.Cons.ActiveSegsForCol(i)
+			segs := e.Cons.ActiveSegsForCol(i)
 			switch {
-			case syns > 0:
+			case segs > 0:
 				//fmt.Println("Activating predicted col", i)
 				cellsToAdd := e.activatePredictedColumn(i, learn)
 				for _, c := range cellsToAdd {
 					e.ActiveCells[c] = true
 					e.WinnerCells[c] = true
 				}
-			case syns == 0:
+			case segs == 0:
 				//fmt.Println("Bursting col", i)
 				cellsToAdd, winnerCell := e.burstColumn(i, learn)
 				for _, c := range cellsToAdd {
@@ -272,7 +269,7 @@ func (e *V1) Reset() {
 }
 
 func (e *V1) computeMetrics(active []bool) {
-	var nActive, nGood, nBad int
+	var nActive, nGood, nBad, nNil int
 	for i := range active {
 		if active[i] {
 			nActive++
@@ -285,12 +282,27 @@ func (e *V1) computeMetrics(active []bool) {
 			case false:
 				nBad++
 			}
+		} else {
+			if active[i] {
+				nNil++
+			}
 		}
+
 	}
+
+	// out of predicted, how many were right? accuracy 0-1
+	// how many were wrong?
+	//
 
 	e.deltaInf = float64(nGood+nBad) / float64(nActive)
 	e.deltaAcc = float64(nGood) / float64(nBad+nGood)
 	e.deltaAnm = float64(nActive-nGood) / float64(nActive)
+
+	/*
+		fmt.Println("good:", nGood)
+		fmt.Println("bad :", nBad)
+		fmt.Println("nil :", nNil)
+	*/
 }
 
 // GetActiveCells returns the currently active cells, in []int

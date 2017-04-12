@@ -37,7 +37,7 @@ func NewV1(p V1Params) *V1 {
 	tpar := tm.NewV1Params()
 	cpar := cla.NewV2Params()
 
-	e := enc.NewRDScalar(1024, 102, 0, 0.5)
+	e := enc.NewRDScalar(1024, 102, 0, 0.02)
 
 	spar.NumInputs = 1024
 	spar.NumColumns = 2048

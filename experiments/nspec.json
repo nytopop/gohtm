@@ -1,0 +1,16 @@
+{
+  "a": {
+    "ord": 0,
+    "inputs": ["encoderA"]
+  },
+  "b": {
+    "ord": 1,
+    "inputs": ["encoderB"]
+  },
+  "c": {
+    "ord": 2,
+    "inputs": ["a", "b"],
+    "combinator": "union",
+    "tScope": 2
+  }
+}
