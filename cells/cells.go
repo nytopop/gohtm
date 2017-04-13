@@ -5,9 +5,10 @@ state.
 */
 package cells
 
-// TODO
-// this whole package should be limited
-// to _synaptic_ state, not cellular
+// Interface for cellular connectivity structures.
+type Interface interface {
+	CreateSegment(cell int, targets []bool, perm float32) int
+}
 
 // Cells is an interface for TemporalMemory
 // compatible cellular and synaptic state.
