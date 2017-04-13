@@ -9,8 +9,6 @@ import (
 
 // V2 ... extended TM. basal, apical
 type V2Params struct {
-	Apical bool `json:"apical"`
-
 	NumColumns      int `json:"numcolumns"`
 	CellsPerCol     int `json:"cellspercol"`
 	SegsPerCell     int `json:"segspercell"`
@@ -24,15 +22,14 @@ type V2Params struct {
 
 func NewV2Params() V2Params {
 	return V2Params{
-		Apical:          false,
 		NumColumns:      2048,
 		CellsPerCol:     16,
 		SegsPerCell:     32,
 		SynsPerSeg:      16,
 		MatchThreshold:  6,
 		ActiveThreshold: 12,
-		NumBasalCells:   65535,
-		NumApicalCells:  65535,
+		NumBasalCells:   32768,
+		NumApicalCells:  32768,
 	}
 }
 
@@ -60,13 +57,15 @@ func NewV2(p V2Params) Interface {
 		SegsPerCell: p.SegsPerCell,
 		SynsPerSeg:  p.SynsPerSeg,
 	}
+	p.NumBasalCells = p.NumColumns * p.CellsPerCol
 
 	apar := cells.V2Params{
 		NumColumns:  p.NumColumns,
-		CellsPerCol: p.CellsPerCol / 2,
-		SegsPerCell: p.SegsPerCell / 2,
+		CellsPerCol: p.CellsPerCol,
+		SegsPerCell: p.SegsPerCell,
 		SynsPerSeg:  p.SynsPerSeg,
 	}
+	p.NumApicalCells = p.NumColumns * p.CellsPerCol
 
 	return &V2{
 		P:      p,

@@ -67,7 +67,6 @@ func (c *V2) CreateSegment(cell int, targets []bool, perm float32) int {
 			}
 		}
 
-		// got it, now we remove mi
 		c.Cells[cell].Segments = append(
 			c.Cells[cell].Segments[:mi],
 			c.Cells[cell].Segments[mi+1:]...)
@@ -100,4 +99,24 @@ func (c *V2) CreateSegment(cell int, targets []bool, perm float32) int {
 	}
 
 	return idx
+}
+
+// ComputeActivity returns a sparsely populated slice of integers
+// denoting the number of connected live synapses on each cell.
+func (c *V2) ComputeActivity(active []bool, perm float32) []int {
+	cells := make([]int, c.P.NumColumns*c.P.CellsPerCol)
+	for i := range cells {
+		var count int
+		for j := range c.Cells[i].Segments {
+			for k := range c.Cells[i].Segments[j].Synapses {
+				if c.Cells[i].Segments[j].Synapses[k].Perm >= perm {
+					if active[c.Cells[i].Segments[j].Synapses[k].Idx] {
+						count++
+					}
+				}
+			}
+		}
+		cells[i] = count
+	}
+	return cells
 }

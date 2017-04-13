@@ -50,8 +50,8 @@ func main() {
 
 	if err := t.Compute(true,
 		make([]bool, 2048),
-		make([]bool, 65535),
-		make([]bool, 65535)); err != nil {
+		make([]bool, 2048*16),
+		make([]bool, 2048*16)); err != nil {
 		log.Fatalf("%+v", err)
 	}
 
