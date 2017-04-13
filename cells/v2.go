@@ -1,7 +1,6 @@
 package cells
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 )
@@ -58,10 +57,10 @@ func (c *V2) CreateSegment(cell int, targets []bool, perm float32) int {
 			lastIter: c.iteration,
 		})
 
-	// TODO bounds check
-	var mi, mv int
-	mi, mv = math.MaxInt64, math.MaxInt64
+	// bounds check
 	if len(c.Cells[cell].Segments) > c.P.SegsPerCell {
+		var mi, mv int
+		mi, mv = math.MaxInt64, math.MaxInt64
 		for i := range c.Cells[cell].Segments {
 			if c.Cells[cell].Segments[i].lastIter < mv {
 				mv, mi = c.Cells[cell].Segments[i].lastIter, i
@@ -69,7 +68,9 @@ func (c *V2) CreateSegment(cell int, targets []bool, perm float32) int {
 		}
 
 		// got it, now we remove mi
-		fmt.Printf("lowest iter %d\n", mi)
+		c.Cells[cell].Segments = append(
+			c.Cells[cell].Segments[:mi],
+			c.Cells[cell].Segments[mi+1:]...)
 	}
 
 	// gen sample
