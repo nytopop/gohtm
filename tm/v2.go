@@ -1,20 +1,19 @@
 package tm
 
 import (
-	"fmt"
-
 	"github.com/nytopop/gohtm/cells"
 	"github.com/pkg/errors"
 )
 
 // V2 ... extended TM. basal, apical
 type V2Params struct {
-	NumColumns      int `json:"numcolumns"`
-	CellsPerCol     int `json:"cellspercol"`
-	SegsPerCell     int `json:"segspercell"`
-	SynsPerSeg      int `json:"synsperseg"`
-	MatchThreshold  int `json:"matchthreshold"`
-	ActiveThreshold int `json:"activethreshold"`
+	NumColumns       int     `json:"numcolumns"`
+	CellsPerCol      int     `json:"cellspercol"`
+	SegsPerCell      int     `json:"segspercell"`
+	SynsPerSeg       int     `json:"synsperseg"`
+	MatchThreshold   int     `json:"matchthreshold"`
+	ActiveThreshold  int     `json:"activethreshold"`
+	SynPermConnected float32 `json:"synpermconnected"`
 
 	NumBasalCells  int `json:"numbasalcells"`
 	NumApicalCells int `json:"numapicalcells"`
@@ -22,14 +21,13 @@ type V2Params struct {
 
 func NewV2Params() V2Params {
 	return V2Params{
-		NumColumns:      2048,
-		CellsPerCol:     16,
-		SegsPerCell:     32,
-		SynsPerSeg:      16,
-		MatchThreshold:  6,
-		ActiveThreshold: 12,
-		NumBasalCells:   32768,
-		NumApicalCells:  32768,
+		NumColumns:       2048,
+		CellsPerCol:      16,
+		SegsPerCell:      32,
+		SynsPerSeg:       16,
+		MatchThreshold:   6,
+		ActiveThreshold:  12,
+		SynPermConnected: 0.5,
 	}
 }
 
@@ -52,25 +50,24 @@ type V2 struct {
 func NewV2(p V2Params) Interface {
 	// basal connections params, use local
 	bpar := cells.V2Params{
-		NumColumns:  p.NumColumns,
-		CellsPerCol: p.CellsPerCol,
-		SegsPerCell: p.SegsPerCell,
-		SynsPerSeg:  p.SynsPerSeg,
+		NumColumns:       p.NumColumns,
+		CellsPerCol:      p.CellsPerCol,
+		SegsPerCell:      p.SegsPerCell,
+		SynsPerSeg:       p.SynsPerSeg,
+		MatchThreshold:   p.MatchThreshold,
+		ActiveThreshold:  p.ActiveThreshold,
+		SynPermConnected: p.SynPermConnected,
 	}
+	// for now this works,
+	// but really the apical input size can be something
+	// totally different from cols*cells
 	p.NumBasalCells = p.NumColumns * p.CellsPerCol
-
-	apar := cells.V2Params{
-		NumColumns:  p.NumColumns,
-		CellsPerCol: p.CellsPerCol,
-		SegsPerCell: p.SegsPerCell,
-		SynsPerSeg:  p.SynsPerSeg,
-	}
 	p.NumApicalCells = p.NumColumns * p.CellsPerCol
 
 	return &V2{
 		P:      p,
 		Basal:  cells.NewV2(bpar),
-		Apical: cells.NewV2(apar),
+		Apical: cells.NewV2(bpar),
 	}
 }
 
@@ -87,8 +84,7 @@ func (v *V2) Compute(learn bool, cols, basal, apical []bool) error {
 		return errors.WithStack(errors.New("match >= active"))
 	}
 
-	fmt.Printf("cols %d\nbasal %d\napical %d\n",
-		len(cols), len(basal), len(apical))
+	// act, mat, olaps = computeactivity
 
 	return nil
 }

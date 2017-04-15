@@ -7,10 +7,13 @@ import (
 
 // V2Params ...
 type V2Params struct {
-	NumColumns  int `json:"numcolumns"`
-	CellsPerCol int `json:"cellspercol"`
-	SegsPerCell int `json:"segspercell"`
-	SynsPerSeg  int `json:"synsperseg"`
+	NumColumns       int     `json:"numcolumns"`
+	CellsPerCol      int     `json:"cellspercol"`
+	SegsPerCell      int     `json:"segspercell"`
+	SynsPerSeg       int     `json:"synsperseg"`
+	MatchThreshold   int     `json:"matchthreshold"`
+	ActiveThreshold  int     `json:"activethreshold"`
+	SynPermConnected float32 `json:"synpermconnected"`
 }
 
 // V2 ...
@@ -59,8 +62,7 @@ func (c *V2) CreateSegment(cell int, targets []bool, perm float32) int {
 
 	// bounds check
 	if len(c.Cells[cell].Segments) > c.P.SegsPerCell {
-		var mi, mv int
-		mi, mv = math.MaxInt64, math.MaxInt64
+		mi, mv := math.MaxInt64, math.MaxInt64
 		for i := range c.Cells[cell].Segments {
 			if c.Cells[cell].Segments[i].lastIter < mv {
 				mv, mi = c.Cells[cell].Segments[i].lastIter, i
@@ -101,22 +103,35 @@ func (c *V2) CreateSegment(cell int, targets []bool, perm float32) int {
 	return idx
 }
 
-// ComputeActivity returns a sparsely populated slice of integers
-// denoting the number of connected live synapses on each cell.
-func (c *V2) ComputeActivity(active []bool, perm float32) []int {
-	cells := make([]int, c.P.NumColumns*c.P.CellsPerCol)
-	for i := range cells {
-		var count int
+// ComputeActivity returns the indices of all active and matching
+// segments for the provided active input.
+func (c *V2) ComputeActivity(active []bool) ([][]int, [][]int) {
+	act := make([][]int, len(c.Cells))
+	mat := make([][]int, len(c.Cells))
+	for i := range c.Cells {
+		var actTmp, matTmp []int
 		for j := range c.Cells[i].Segments {
-			for k := range c.Cells[i].Segments[j].Synapses {
-				if c.Cells[i].Segments[j].Synapses[k].Perm >= perm {
-					if active[c.Cells[i].Segments[j].Synapses[k].Idx] {
-						count++
-					}
+			// count live / dead synapses
+			var aCount, mCount int
+			for _, syn := range c.Cells[i].Segments[j].Synapses {
+				if syn.Perm >= c.P.SynPermConnected {
+					aCount++
+				} else {
+					mCount++
 				}
 			}
+
+			// append segs if over threshold
+			switch {
+			case aCount >= c.P.ActiveThreshold:
+				actTmp = append(actTmp, j)
+				fallthrough
+			case mCount >= c.P.MatchThreshold:
+				matTmp = append(matTmp, j)
+			}
 		}
-		cells[i] = count
+		act[i] = actTmp
+		mat[i] = matTmp
 	}
-	return cells
+	return act, mat
 }

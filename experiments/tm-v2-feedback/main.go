@@ -41,19 +41,17 @@ net.Network -> net.Interface
 */
 
 func main() {
-	for i := 0; i < 16; i++ {
-		fmt.Println("vim-go", i)
-	}
-
 	tpar := tm.NewV2Params()
 	t := tm.NewV2(tpar)
 
-	if err := t.Compute(true,
-		make([]bool, 2048),
-		make([]bool, 2048*16),
-		make([]bool, 2048*16)); err != nil {
-		log.Fatalf("%+v", err)
-	}
+	for i := 0; i < 16; i++ {
+		if err := t.Compute(true,
+			make([]bool, 2048),
+			make([]bool, 2048*16),
+			make([]bool, 2048*16)); err != nil {
+			log.Fatalf("%+v", err)
+		}
 
-	//
+		fmt.Printf("bang %d\n", i)
+	}
 }

@@ -8,7 +8,7 @@ package cells
 // Interface for cellular connectivity structures.
 type Interface interface {
 	CreateSegment(cell int, targets []bool, perm float32) int
-	ComputeActivity(active []bool, perm float32) []int
+	ComputeActivity(active []bool) ([][]int, [][]int)
 }
 
 // Cells is an interface for TemporalMemory
