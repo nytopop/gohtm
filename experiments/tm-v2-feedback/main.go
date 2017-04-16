@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/nytopop/gohtm/tm"
@@ -51,7 +50,7 @@ func main() {
 			make([]bool, 2048*16)); err != nil {
 			log.Fatalf("%+v", err)
 		}
-
-		fmt.Printf("bang %d\n", i)
+		i = i
+		//		fmt.Printf("bang %d\n", i)
 	}
 }

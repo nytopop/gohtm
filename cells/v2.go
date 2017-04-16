@@ -114,10 +114,12 @@ func (c *V2) ComputeActivity(active []bool) ([][]int, [][]int) {
 			// count live / dead synapses
 			var aCount, mCount int
 			for _, syn := range c.Cells[i].Segments[j].Synapses {
-				if syn.Perm >= c.P.SynPermConnected {
-					aCount++
-				} else {
-					mCount++
+				if active[syn.Idx] {
+					if syn.Perm >= c.P.SynPermConnected {
+						aCount++
+					} else {
+						mCount++
+					}
 				}
 			}
 

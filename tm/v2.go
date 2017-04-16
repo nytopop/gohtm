@@ -1,6 +1,8 @@
 package tm
 
 import (
+	"fmt"
+
 	"github.com/nytopop/gohtm/cells"
 	"github.com/pkg/errors"
 )
@@ -84,9 +86,48 @@ func (v *V2) Compute(learn bool, cols, basal, apical []bool) error {
 		return errors.WithStack(errors.New("match >= active"))
 	}
 
-	// act, mat, olaps = computeactivity
+	// calculate predictions
+	bActSegs, _ := v.Basal.ComputeActivity(basal)
+	aActSegs, _ := v.Apical.ComputeActivity(apical)
+	pCells := v.computePrediction(bActSegs, aActSegs) // export pCells
+	fmt.Printf("%d cells\n", len(pCells))
+
+	// learn
+	if learn {
+	}
 
 	return nil
+}
+
+func (v *V2) computePrediction(b, a [][]int) []bool {
+	// depolarize cells if active on basal && apical
+	full := make([]bool, v.P.NumBasalCells) // basal+apical
+	part := make([]bool, v.P.NumBasalCells) // basal
+	for i := range full {
+		switch {
+		case len(b[i]) > 0 && len(a[i]) > 0:
+			full[i] = true
+		case len(b[i]) > 0:
+			part[i] = true
+		}
+	}
+
+	// apical connections inhibit other cells in the same col
+	cols := make([]bool, v.P.NumColumns)
+	for i := range full {
+		col := i / v.P.CellsPerCol
+		cols[col] = cols[col] || full[i]
+	}
+
+	// depolarize cells that survive inhibition
+	for i := range part {
+		col := i / v.P.CellsPerCol
+		if part[i] && cols[col] == false {
+			full[i] = true
+		}
+	}
+
+	return full
 }
 
 func (v *V2) Reset() {}
