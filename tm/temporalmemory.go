@@ -8,10 +8,10 @@ package tm
 // option of feedback input. For no feedback, simply pass
 // a 0 length apical input.
 type Interface interface {
-	Compute(learn bool, cols, basal, apical []bool) error
 	Reset()
 	ActiveCells() []bool
 	WinnerCells() []bool
+	Compute(learn bool, cols, basal, apical []bool) error
 }
 
 // TemporalMemory is an interface for a temporal

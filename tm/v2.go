@@ -73,6 +73,16 @@ func NewV2(p V2Params) Interface {
 	}
 }
 
+func (v *V2) Reset() {}
+
+func (v *V2) ActiveCells() []bool {
+	return make([]bool, v.P.NumBasalCells)
+}
+
+func (v *V2) WinnerCells() []bool {
+	return make([]bool, v.P.NumBasalCells)
+}
+
 // feedforward + feedback
 func (v *V2) Compute(learn bool, cols, basal, apical []bool) error {
 	switch {
@@ -86,11 +96,40 @@ func (v *V2) Compute(learn bool, cols, basal, apical []bool) error {
 		return errors.WithStack(errors.New("match >= active"))
 	}
 
-	// calculate predictions
+	// compute prediction for this timestep
 	bActSegs, _ := v.Basal.ComputeActivity(basal)
 	aActSegs, _ := v.Apical.ComputeActivity(apical)
-	pCells := v.computePrediction(bActSegs, aActSegs) // export pCells
-	fmt.Printf("%d cells\n", len(pCells))
+	predicted := v.computePrediction(bActSegs, aActSegs) // export pCells
+	fmt.Printf("%d predicted\n", len(predicted))
+
+	// activate cells for correct predictions
+	active := make([]bool, v.P.NumBasalCells)
+	for i := range predicted {
+		col := i / v.P.CellsPerCol
+		if cols[col] && predicted[i] {
+			active[i] = true
+		}
+	}
+
+	// bursting
+	for i := range cols {
+		// check for predictions
+		var cond bool
+		for j := i * v.P.CellsPerCol; j < (i+1)*v.P.CellsPerCol; j++ {
+			if predicted[j] {
+				cond = true
+			}
+		}
+
+		// if not predicted, we burst all cells in column
+		if cols[i] && !cond {
+			for j := i * v.P.CellsPerCol; j < (i+1)*v.P.CellsPerCol; j++ {
+				active[j] = true
+			}
+		}
+	}
+
+	// compute learning information
 
 	// learn
 	if learn {
@@ -128,13 +167,4 @@ func (v *V2) computePrediction(b, a [][]int) []bool {
 	}
 
 	return full
-}
-
-func (v *V2) Reset() {}
-
-func (v *V2) ActiveCells() []bool {
-	return make([]bool, v.P.NumBasalCells)
-}
-func (v *V2) WinnerCells() []bool {
-	return make([]bool, v.P.NumBasalCells)
 }
